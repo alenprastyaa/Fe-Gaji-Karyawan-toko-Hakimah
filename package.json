@@ -1,0 +1,39 @@
+{
+  "name": "web-hakimah",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:unit": "vitest",
+    "lint": "eslint . --fix"
+  },
+  "dependencies": {
+    "axios": "^1.9.0",
+    "firebase": "^11.8.1",
+    "html2pdf.js": "^0.10.3",
+    "pinia": "^3.0.3",
+    "sweetalert2": "^11.22.0",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@tailwindcss/postcss": "^4.1.8",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vitest/eslint-plugin": "^1.1.39",
+    "@vue/test-utils": "^2.4.6",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.22.0",
+    "eslint-plugin-vue": "~10.0.0",
+    "globals": "^16.0.0",
+    "jsdom": "^26.0.0",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^4.1.8",
+    "vite": "^6.2.4",
+    "vite-plugin-vue-devtools": "^7.7.2",
+    "vitest": "^3.1.1"
+  }
+}
