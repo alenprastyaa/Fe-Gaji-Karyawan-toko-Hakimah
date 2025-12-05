@@ -44,9 +44,9 @@ const roundToTwo = (num) => {
 
 onMounted(async () => {
   try {
-    await userStore.fetchAllUsers();
-    await bonStore.fetchAllBons({});
-    await cutiStore.fetchAllCuti();
+    await userStore.userActive();
+    await bonStore.fetchBonActive({});
+    await cutiStore.fetchCutiActive();
   } catch (error) {
     console.error("Error loading initial data:", error);
   }
@@ -95,6 +95,22 @@ const employeeSalarySummary = computed(() => {
   }
 
   const summaries = userStore.users.map((user) => {
+    // ===== PERUBAHAN 1: Cek status karyawan =====
+    // Hanya hitung untuk karyawan dengan status "active"
+    if (user.status !== "active") {
+      return {
+        ...user,
+        totalBon: 0,
+        gajiPerHari: 0,
+        daysWorked: 0,
+        totalApprovedUnpaidLeaveDays: 0,
+        effectiveDaysWorked: 0,
+        gajiProRata: 0,
+        sisaGaji: 0,
+        isInactive: true,
+      };
+    }
+
     let totalBon = 0;
     bonStore.allBons.forEach((bon) => {
       if (bon.userId === user.id) {
@@ -161,6 +177,7 @@ const employeeSalarySummary = computed(() => {
       effectiveDaysWorked,
       gajiProRata: roundToTwo(gajiProRata),
       sisaGaji: roundToTwo(sisaGaji),
+      isInactive: false,
     };
   });
 
@@ -175,30 +192,34 @@ const employeeSalarySummary = computed(() => {
 
   return summaries;
 });
-
 const totalSisaGaji = computed(() => {
-  const total = employeeSalarySummary.value.reduce((total, summary) => {
-    return total + summary.sisaGaji;
-  }, 0);
+  const total = employeeSalarySummary.value
+    .filter((summary) => !summary.isInactive)
+    .reduce((total, summary) => {
+      return total + summary.sisaGaji;
+    }, 0);
   return roundToTwo(total);
 });
 
 const totalGajiProRata = computed(() => {
-  const total = employeeSalarySummary.value.reduce((total, summary) => {
-    return total + summary.gajiProRata;
-  }, 0);
+  const total = employeeSalarySummary.value
+    .filter((summary) => !summary.isInactive)
+    .reduce((total, summary) => {
+      return total + summary.gajiProRata;
+    }, 0);
   return roundToTwo(total);
 });
-
 const totalBon = computed(() => {
-  const total = employeeSalarySummary.value.reduce((total, summary) => {
-    return total + summary.totalBon;
-  }, 0);
+  const total = employeeSalarySummary.value
+    .filter((summary) => !summary.isInactive)
+    .reduce((total, summary) => {
+      return total + summary.totalBon;
+    }, 0);
   return roundToTwo(total);
 });
-
 const employeesWithSurplus = computed(() => {
-  return employeeSalarySummary.value.filter((summary) => summary.sisaGaji >= 0).length;
+  return employeeSalarySummary.value
+    .filter((summary) => !summary.isInactive && summary.sisaGaji >= 0).length;
 });
 
 const handleAddUser = async () => {
@@ -272,7 +293,7 @@ const handleUpdateUser = async () => {
       showEditUserModal.value = false;
       editedUser.value = null;
 
-      await Promise.all([bonStore.fetchAllBons({}), cutiStore.fetchAllCuti()]);
+      await Promise.all([bonStore.fetchAllBons({}), cutiStore.fetchCutiActive()]);
     }
   } catch (error) {
     console.error("Error updating user:", error);
@@ -621,14 +642,10 @@ const downloadSalaryPdf = (summary) => {
   });
 
   y += 20;
-
-  // Summary Section with Enhanced Table
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.text("RINGKASAN PERHITUNGAN", margin, y);
   y += 5;
-
-  // Create summary data with special styling for net salary
   const summaryData = [
     ["Gaji Pro-Rata (s/d hari ini)", formatCurrency(summary.gajiProRata)],
     ["Total Bon", formatCurrency(summary.totalBon)],
@@ -672,7 +689,7 @@ const downloadSalaryPdf = (summary) => {
   doc.setFontSize(10);
   doc.setFont("helvetica", "italic");
   const statusText =
-    summary.sisaGaji >= 0 ? "✅ Status: Gaji masih tersisa" : "⚠️  Status: Bon melebihi gaji";
+    summary.sisaGaji >= 0 ? "✅ Status: Gaji masih tersisa" : " Status: Bon melebihi gaji & ANDA HARUS MEBAYAR SEBESAR MINUS DIATAS";
   doc.text(statusText, margin, y);
 
   y += 20;
@@ -725,41 +742,25 @@ const downloadSalaryPdf = (summary) => {
 </script>
 
 <template>
-  <div class="p-4 bg-white rounded-lg shadow-md">
+  <div class="p-4  rounded-lg shadow-md">
     <h1 class="text-2xl font-bold text-gray-800 mb-6">Manajemen Bon & Cuti</h1>
     <div class="mt-6 relative overflow-hidden">
-      <!-- Main Card with Modern Design -->
       <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
         <!-- Header with Gradient Background -->
-        <div
-          class="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 p-6 sm:p-8 text-white relative"
-        >
+        <div class="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 p-6 sm:p-8 text-white relative">
           <!-- Decorative Elements -->
-          <div
-            class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"
-          ></div>
-          <div
-            class="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"
-          ></div>
+          <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
 
           <div class="relative z-10">
             <!-- Icon and Title -->
             <div class="flex items-center mb-6">
               <div
-                class="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mr-4"
-              >
-                <svg
-                  class="w-6 h-6 sm:w-7 sm:h-7 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                  ></path>
+                class="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mr-4">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1">
+                  </path>
                 </svg>
               </div>
               <div>
@@ -776,18 +777,14 @@ const downloadSalaryPdf = (summary) => {
                 Total Sisa Gaji Yang harus dibayarkan
               </div>
               <div class="flex items-center justify-center sm:justify-start">
-                <div
-                  :class="[
-                    'text-3xl sm:text-4xl font-bold mr-3',
-                    totalSisaGaji >= 0 ? 'text-white' : 'text-red-200',
-                  ]"
-                >
+                <div :class="[
+                  'text-3xl sm:text-4xl font-bold mr-3',
+                  totalSisaGaji >= 0 ? 'text-white' : 'text-red-200',
+                ]">
                   {{ formatCurrency(totalSisaGaji) }}
                 </div>
-                <div
-                  class="px-3 py-1 rounded-full text-xs font-semibold"
-                  :class="totalSisaGaji >= 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'"
-                >
+                <div class="px-3 py-1 rounded-full text-xs font-semibold"
+                  :class="totalSisaGaji >= 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'">
                   {{ totalSisaGaji >= 0 ? "Surplus" : "Defisit" }}
                 </div>
               </div>
@@ -799,23 +796,13 @@ const downloadSalaryPdf = (summary) => {
         <div class="mt-5">
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <!-- Total Karyawan -->
-            <div
-              class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-5 border border-blue-200"
-            >
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-5 border border-blue-200">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <svg
-                    class="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                    ></path>
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z">
+                    </path>
                   </svg>
                 </div>
               </div>
@@ -826,23 +813,13 @@ const downloadSalaryPdf = (summary) => {
             </div>
 
             <!-- Total Gaji Pro-Rata -->
-            <div
-              class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-5 border border-green-200"
-            >
+            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-5 border border-green-200">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                  <svg
-                    class="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                    ></path>
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                    </path>
                   </svg>
                 </div>
               </div>
@@ -853,23 +830,13 @@ const downloadSalaryPdf = (summary) => {
             </div>
 
             <!-- Total Bon -->
-            <div
-              class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 sm:p-5 border border-red-200"
-            >
+            <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 sm:p-5 border border-red-200">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
-                  <svg
-                    class="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    ></path>
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                    </path>
                   </svg>
                 </div>
               </div>
@@ -880,23 +847,11 @@ const downloadSalaryPdf = (summary) => {
             </div>
 
             <!-- Karyawan Surplus -->
-            <div
-              class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 sm:p-5 border border-purple-200"
-            >
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 sm:p-5 border border-purple-200">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                  <svg
-                    class="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M5 13l4 4L19 7"
-                    ></path>
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                   </svg>
                 </div>
               </div>
@@ -915,26 +870,20 @@ const downloadSalaryPdf = (summary) => {
       </h2>
 
       <div class="mb-3 sm:mb-4 flex justify-center sm:justify-end">
-        <button
-          @click="showAddCutiModal = true"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded-xl text-sm sm:text-base w-full sm:w-auto"
-        >
+        <button @click="showAddCutiModal = true"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded-xl text-sm sm:text-base w-full sm:w-auto">
           Tambah Cuti Karyawan
         </button>
       </div>
 
       <div v-if="cutiStore.loading" class="text-center py-6 sm:py-8">
         <p class="text-sm sm:text-base">Memuat data cuti...</p>
-        <div
-          class="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-green-500 mx-auto mt-4"
-        ></div>
+        <div class="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-green-500 mx-auto mt-4"></div>
       </div>
 
-      <div
-        v-else-if="cutiStore.error"
+      <div v-else-if="cutiStore.error"
         class="bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-3 rounded relative text-sm sm:text-base"
-        role="alert"
-      >
+        role="alert">
         <strong class="font-bold">Error!</strong>
         <span class="block sm:inline">{{ cutiStore.error }}</span>
       </div>
@@ -957,39 +906,30 @@ const downloadSalaryPdf = (summary) => {
                 </tr>
               </thead>
               <tbody class="text-gray-600 text-sm font-light">
-                <tr
-                  v-for="(cuti, index) in cutiStore.allCuti"
-                  :key="cuti.id"
-                  class="border-b border-gray-200 hover:bg-gray-100"
-                >
+                <tr v-for="(cuti, index) in cutiStore.allCuti" :key="cuti.id"
+                  class="border-b border-gray-200 hover:bg-gray-100">
                   <td class="py-3 px-6 text-left whitespace-nowrap">{{ index + 1 }}</td>
-                  <td class="py-3 px-6 text-left">{{ cuti.karyawan?.namaLengkap || "N/A" }}</td>
+                  <td class="py-3 px-6 text-left">{{ cuti.pemohon.username || "N/A" }}</td>
                   <td class="py-3 px-6 text-left">{{ cuti.jenisCuti }}</td>
                   <td class="py-3 px-6 text-left">{{ formatDate(cuti.tanggalMulai) }}</td>
                   <td class="py-3 px-6 text-left">{{ formatDate(cuti.tanggalSelesai) }}</td>
                   <td class="py-3 px-6 text-left">{{ cuti.keperluan || "-" }}</td>
                   <td class="py-3 px-6 text-center">
-                    <span
-                      :class="[
-                        'px-2 py-1 text-xs font-semibold rounded-full',
-                        cuti.disetujui ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800',
-                      ]"
-                    >
+                    <span :class="[
+                      'px-2 py-1 text-xs font-semibold rounded-full',
+                      cuti.disetujui ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800',
+                    ]">
                       {{ cuti.disetujui ? "Ya" : "Tidak" }}
                     </span>
                   </td>
                   <td class="py-3 px-6 text-center">
                     <div class="flex item-center justify-center space-x-2">
-                      <button
-                        @click="openEditCutiModal(cuti)"
-                        class="bg-yellow-500 hover:bg-yellow-700 text-white py-1 px-2 rounded text-xs"
-                      >
+                      <button @click="openEditCutiModal(cuti)"
+                        class="bg-yellow-500 hover:bg-yellow-700 text-white py-1 px-2 rounded text-xs">
                         Edit
                       </button>
-                      <button
-                        @click="handleDeleteCuti(cuti.id, cuti.karyawan?.namaLengkap || 'Cuti ini')"
-                        class="bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded text-xs"
-                      >
+                      <button @click="handleDeleteCuti(cuti.id, cuti.karyawan?.namaLengkap || 'Cuti ini')"
+                        class="bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded text-xs">
                         Hapus
                       </button>
                     </div>
@@ -1001,11 +941,8 @@ const downloadSalaryPdf = (summary) => {
 
           <!-- Mobile Card View -->
           <div class="lg:hidden space-y-3">
-            <div
-              v-for="(cuti, index) in cutiStore.allCuti"
-              :key="cuti.id"
-              class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
-            >
+            <div v-for="(cuti, index) in cutiStore.allCuti" :key="cuti.id"
+              class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
               <div class="flex justify-between items-start mb-3">
                 <div class="flex-1">
                   <h3 class="font-semibold text-gray-800 text-sm">
@@ -1013,12 +950,10 @@ const downloadSalaryPdf = (summary) => {
                   </h3>
                   <p class="text-xs text-gray-600 mt-1">{{ cuti.jenisCuti }}</p>
                 </div>
-                <span
-                  :class="[
-                    'px-2 py-1 text-xs font-semibold rounded-full ml-2',
-                    cuti.disetujui ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800',
-                  ]"
-                >
+                <span :class="[
+                  'px-2 py-1 text-xs font-semibold rounded-full ml-2',
+                  cuti.disetujui ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800',
+                ]">
                   {{ cuti.disetujui ? "Disetujui" : "Belum Disetujui" }}
                 </span>
               </div>
@@ -1040,16 +975,12 @@ const downloadSalaryPdf = (summary) => {
               </div>
 
               <div class="flex flex-col sm:flex-row gap-2 mt-4">
-                <button
-                  @click="openEditCutiModal(cuti)"
-                  class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded text-sm font-medium transition-colors"
-                >
+                <button @click="openEditCutiModal(cuti)"
+                  class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded text-sm font-medium transition-colors">
                   Edit
                 </button>
-                <button
-                  @click="handleDeleteCuti(cuti.id, cuti.karyawan?.namaLengkap || 'Cuti ini')"
-                  class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded text-sm font-medium transition-colors"
-                >
+                <button @click="handleDeleteCuti(cuti.id, cuti.karyawan?.namaLengkap || 'Cuti ini')"
+                  class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded text-sm font-medium transition-colors">
                   Hapus
                 </button>
               </div>
@@ -1071,38 +1002,29 @@ const downloadSalaryPdf = (summary) => {
                 </tr>
               </thead>
               <tbody class="text-gray-600 text-xs font-light">
-                <tr
-                  v-for="(cuti, index) in cutiStore.allCuti"
-                  :key="cuti.id"
-                  class="border-b border-gray-200 hover:bg-gray-100"
-                >
+                <tr v-for="(cuti, index) in cutiStore.allCuti" :key="cuti.id"
+                  class="border-b border-gray-200 hover:bg-gray-100">
                   <td class="py-2 px-3 text-left whitespace-nowrap">{{ index + 1 }}</td>
                   <td class="py-2 px-3 text-left">{{ cuti.karyawan?.namaLengkap || "N/A" }}</td>
                   <td class="py-2 px-3 text-left">{{ cuti.jenisCuti }}</td>
                   <td class="py-2 px-3 text-left">{{ formatDate(cuti.tanggalMulai) }}</td>
                   <td class="py-2 px-3 text-left">{{ formatDate(cuti.tanggalSelesai) }}</td>
                   <td class="py-2 px-3 text-center">
-                    <span
-                      :class="[
-                        'px-2 py-1 text-xs font-semibold rounded-full',
-                        cuti.disetujui ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800',
-                      ]"
-                    >
+                    <span :class="[
+                      'px-2 py-1 text-xs font-semibold rounded-full',
+                      cuti.disetujui ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800',
+                    ]">
                       {{ cuti.disetujui ? "Ya" : "Tidak" }}
                     </span>
                   </td>
                   <td class="py-2 px-3 text-center">
                     <div class="flex item-center justify-center space-x-1">
-                      <button
-                        @click="openEditCutiModal(cuti)"
-                        class="bg-yellow-500 hover:bg-yellow-700 text-white py-1 px-2 rounded text-xs"
-                      >
+                      <button @click="openEditCutiModal(cuti)"
+                        class="bg-yellow-500 hover:bg-yellow-700 text-white py-1 px-2 rounded text-xs">
                         Edit
                       </button>
-                      <button
-                        @click="handleDeleteCuti(cuti.id, cuti.karyawan?.namaLengkap || 'Cuti ini')"
-                        class="bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded text-xs"
-                      >
+                      <button @click="handleDeleteCuti(cuti.id, cuti.karyawan?.namaLengkap || 'Cuti ini')"
+                        class="bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded text-xs">
                         Hapus
                       </button>
                     </div>
@@ -1124,28 +1046,16 @@ const downloadSalaryPdf = (summary) => {
       </h2>
 
       <div class="mb-4 flex justify-end">
-        <input
-          type="text"
-          v-model="searchQuery"
-          placeholder="Cari karyawan..."
-          class="shadow border rounded w-full md:w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-        />
+        <input type="text" v-model="searchQuery" placeholder="Cari karyawan..."
+          class="shadow border rounded w-full md:w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
       </div>
 
-      <div
-        v-if="userStore.loading || bonStore.loading || cutiStore.loading"
-        class="text-center py-4"
-      >
+      <div v-if="userStore.loading || bonStore.loading || cutiStore.loading" class="text-center py-4">
         <p>Memuat data gaji, bon, dan cuti...</p>
-        <div
-          class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mt-2"
-        ></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mt-2"></div>
       </div>
-      <div
-        v-else-if="userStore.error || bonStore.error || cutiStore.error"
-        class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-        role="alert"
-      >
+      <div v-else-if="userStore.error || bonStore.error || cutiStore.error"
+        class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
         <strong class="font-bold">Error!</strong>
         <span class="block sm:inline">{{
           userStore.error || bonStore.error || cutiStore.error
@@ -1154,17 +1064,13 @@ const downloadSalaryPdf = (summary) => {
       <div v-else-if="employeeSalarySummary.length > 0">
         <!-- Mobile Card View (hidden on desktop) -->
         <div class="block lg:hidden space-y-4 px-2">
-          <div
-            v-for="(summary, index) in employeeSalarySummary"
-            :key="summary.id"
-            class="bg-white rounded-lg shadow-md p-4 border border-gray-200"
-          >
+          <div v-for="(summary, index) in employeeSalarySummary" :key="summary.id"
+            class="bg-white rounded-lg shadow-md p-4 border border-gray-200">
             <!-- Employee Header -->
             <div class="flex items-center mb-4 pb-3 border-b border-gray-100">
               <div class="flex-shrink-0 h-10 w-10">
                 <div
-                  class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm"
-                >
+                  class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
                   {{
                     summary.namaLengkap
                       .split(" ")
@@ -1178,16 +1084,12 @@ const downloadSalaryPdf = (summary) => {
                 <div class="text-sm font-semibold text-gray-900">{{ summary.namaLengkap }}</div>
                 <div class="text-xs text-gray-500">{{ summary.username }}</div>
               </div>
-              <button
-                @click="downloadSalaryPdf(summary)"
-                class="ml-2 inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-green-500 transition-all duration-200 shadow-sm"
-              >
+              <button @click="downloadSalaryPdf(summary)"
+                class="ml-2 inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-green-500 transition-all duration-200 shadow-sm">
                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fill-rule="evenodd"
+                  <path fill-rule="evenodd"
                     d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                    clip-rule="evenodd"
-                  />
+                    clip-rule="evenodd" />
                 </svg>
                 PDF
               </button>
@@ -1200,8 +1102,7 @@ const downloadSalaryPdf = (summary) => {
                 <div class="flex items-center text-gray-500 mb-1">
                   <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path
-                      d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
-                    />
+                      d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
                   </svg>
                   Gaji Bulanan
                 </div>
@@ -1217,11 +1118,9 @@ const downloadSalaryPdf = (summary) => {
               <div class="bg-gray-50 p-3 rounded-lg">
                 <div class="flex items-center text-gray-500 mb-1">
                   <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fill-rule="evenodd"
+                    <path fill-rule="evenodd"
                       d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                      clip-rule="evenodd"
-                    />
+                      clip-rule="evenodd" />
                   </svg>
                   Hari Kerja
                 </div>
@@ -1235,11 +1134,9 @@ const downloadSalaryPdf = (summary) => {
               <div class="bg-gray-50 p-3 rounded-lg">
                 <div class="flex items-center text-gray-500 mb-1">
                   <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fill-rule="evenodd"
+                    <path fill-rule="evenodd"
                       d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                      clip-rule="evenodd"
-                    />
+                      clip-rule="evenodd" />
                   </svg>
                   Hari Cuti
                 </div>
@@ -1252,11 +1149,9 @@ const downloadSalaryPdf = (summary) => {
               <div class="bg-gray-50 p-3 rounded-lg">
                 <div class="flex items-center text-gray-500 mb-1">
                   <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fill-rule="evenodd"
+                    <path fill-rule="evenodd"
                       d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
-                      clip-rule="evenodd"
-                    />
+                      clip-rule="evenodd" />
                   </svg>
                   Gaji Pro-Rata
                 </div>
@@ -1271,11 +1166,9 @@ const downloadSalaryPdf = (summary) => {
               <div class="bg-red-50 p-3 rounded-lg border border-red-100">
                 <div class="flex items-center text-red-600 mb-1">
                   <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fill-rule="evenodd"
+                    <path fill-rule="evenodd"
                       d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732L14.146 12.8l-1.179 4.456a1 1 0 01-1.934 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732L9.854 7.2l1.179-4.456A1 1 0 0112 2z"
-                      clip-rule="evenodd"
-                    />
+                      clip-rule="evenodd" />
                   </svg>
                   <span class="text-xs">Total Bon</span>
                 </div>
@@ -1284,40 +1177,30 @@ const downloadSalaryPdf = (summary) => {
                 </div>
               </div>
 
-              <div
-                :class="[
-                  'p-3 rounded-lg border',
-                  summary.sisaGaji >= 0
-                    ? 'bg-green-50 border-green-100'
-                    : 'bg-red-50 border-red-100',
-                ]"
-              >
-                <div
-                  :class="[
-                    'flex items-center mb-1',
-                    summary.sisaGaji >= 0 ? 'text-green-600' : 'text-red-600',
-                  ]"
-                >
+              <div :class="[
+                'p-3 rounded-lg border',
+                summary.sisaGaji >= 0
+                  ? 'bg-green-50 border-green-100'
+                  : 'bg-red-50 border-red-100',
+              ]">
+                <div :class="[
+                  'flex items-center mb-1',
+                  summary.sisaGaji >= 0 ? 'text-green-600' : 'text-red-600',
+                ]">
                   <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fill-rule="evenodd"
+                    <path fill-rule="evenodd"
                       d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z"
-                      clip-rule="evenodd"
-                    />
+                      clip-rule="evenodd" />
                   </svg>
                   <span class="text-xs">Sisa Gaji</span>
                 </div>
-                <div
-                  :class="[
-                    'font-bold text-sm',
-                    summary.sisaGaji >= 0 ? 'text-green-600' : 'text-red-600',
-                  ]"
-                >
+                <div :class="[
+                  'font-bold text-sm',
+                  summary.sisaGaji >= 0 ? 'text-green-600' : 'text-red-600',
+                ]">
                   {{ formatCurrency(summary.sisaGaji) }}
                 </div>
-                <div
-                  :class="['text-xs', summary.sisaGaji >= 0 ? 'text-green-500' : 'text-red-500']"
-                >
+                <div :class="['text-xs', summary.sisaGaji >= 0 ? 'text-green-500' : 'text-red-500']">
                   {{ summary.sisaGaji >= 0 ? "Surplus" : "Defisit" }}
                 </div>
               </div>
@@ -1331,97 +1214,76 @@ const downloadSalaryPdf = (summary) => {
             <thead>
               <tr class="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                 <th
-                  class="py-4 px-4 text-left font-semibold text-sm uppercase tracking-wider border-r border-blue-500 last:border-r-0"
-                >
+                  class="py-4 px-4 text-left font-semibold text-sm uppercase tracking-wider border-r border-blue-500 last:border-r-0">
                   <div class="flex items-center">
                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
-                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                        clip-rule="evenodd"
-                      />
+                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clip-rule="evenodd" />
                     </svg>
                     Nama Karyawan
                   </div>
                 </th>
                 <th
-                  class="py-4 px-4 text-right font-semibold text-sm uppercase tracking-wider border-r border-blue-500"
-                >
+                  class="py-4 px-4 text-right font-semibold text-sm uppercase tracking-wider border-r border-blue-500">
                   <div class="flex items-center justify-end">
                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path
-                        d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
-                      />
+                        d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" />
                     </svg>
                     Gaji Bulanan
                   </div>
                 </th>
                 <th
-                  class="py-4 px-4 text-center font-semibold text-sm uppercase tracking-wider border-r border-blue-500"
-                >
+                  class="py-4 px-4 text-center font-semibold text-sm uppercase tracking-wider border-r border-blue-500">
                   <div class="flex items-center justify-center">
                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
+                      <path fill-rule="evenodd"
                         d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                        clip-rule="evenodd"
-                      />
+                        clip-rule="evenodd" />
                     </svg>
                     Hari Kerja
                   </div>
                 </th>
                 <th
-                  class="py-4 px-4 text-center font-semibold text-sm uppercase tracking-wider border-r border-blue-500"
-                >
+                  class="py-4 px-4 text-center font-semibold text-sm uppercase tracking-wider border-r border-blue-500">
                   <div class="flex items-center justify-center">
                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
+                      <path fill-rule="evenodd"
                         d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                        clip-rule="evenodd"
-                      />
+                        clip-rule="evenodd" />
                     </svg>
                     Hari Cuti
                   </div>
                 </th>
                 <th
-                  class="py-4 px-4 text-right font-semibold text-sm uppercase tracking-wider border-r border-blue-500"
-                >
+                  class="py-4 px-4 text-right font-semibold text-sm uppercase tracking-wider border-r border-blue-500">
                   <div class="flex items-center justify-end">
                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
+                      <path fill-rule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
-                        clip-rule="evenodd"
-                      />
+                        clip-rule="evenodd" />
                     </svg>
                     Gaji Pro-Rata
                   </div>
                 </th>
                 <th
-                  class="py-4 px-4 text-right font-semibold text-sm uppercase tracking-wider border-r border-blue-500"
-                >
+                  class="py-4 px-4 text-right font-semibold text-sm uppercase tracking-wider border-r border-blue-500">
                   <div class="flex items-center justify-end">
                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
+                      <path fill-rule="evenodd"
                         d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732L14.146 12.8l-1.179 4.456a1 1 0 01-1.934 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732L9.854 7.2l1.179-4.456A1 1 0 0112 2z"
-                        clip-rule="evenodd"
-                      />
+                        clip-rule="evenodd" />
                     </svg>
                     Total Bon
                   </div>
                 </th>
                 <th
-                  class="py-4 px-4 text-right font-semibold text-sm uppercase tracking-wider border-r border-blue-500"
-                >
+                  class="py-4 px-4 text-right font-semibold text-sm uppercase tracking-wider border-r border-blue-500">
                   <div class="flex items-center justify-end">
                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
+                      <path fill-rule="evenodd"
                         d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z"
-                        clip-rule="evenodd"
-                      />
+                        clip-rule="evenodd" />
                     </svg>
                     Sisa Gaji
                   </div>
@@ -1429,11 +1291,9 @@ const downloadSalaryPdf = (summary) => {
                 <th class="py-4 px-4 text-center font-semibold text-sm uppercase tracking-wider">
                   <div class="flex items-center justify-center">
                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
+                      <path fill-rule="evenodd"
                         d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                        clip-rule="evenodd"
-                      />
+                        clip-rule="evenodd" />
                     </svg>
                     Aksi
                   </div>
@@ -1441,20 +1301,15 @@ const downloadSalaryPdf = (summary) => {
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-              <tr
-                v-for="(summary, index) in employeeSalarySummary"
-                :key="summary.id"
-                :class="[
-                  'hover:bg-blue-50 transition-colors duration-200',
-                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50',
-                ]"
-              >
+              <tr v-for="(summary, index) in employeeSalarySummary" :key="summary.id" :class="[
+                'hover:bg-blue-50 transition-colors duration-200',
+                index % 2 === 0 ? 'bg-white' : 'bg-gray-50',
+              ]">
                 <td class="py-4 px-4 border-r border-gray-200">
                   <div class="flex items-center">
                     <div class="flex-shrink-0 h-10 w-10">
                       <div
-                        class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm"
-                      >
+                        class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
                         {{
                           summary.namaLengkap
                             .split(" ")
@@ -1483,8 +1338,7 @@ const downloadSalaryPdf = (summary) => {
                 <td class="py-4 px-4 text-center border-r border-gray-200">
                   <div class="inline-flex flex-col items-center">
                     <span
-                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                    >
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       {{ summary.effectiveDaysWorked }} hari
                     </span>
                     <span class="text-xs text-gray-500 mt-1">dari {{ summary.daysWorked }}</span>
@@ -1492,8 +1346,7 @@ const downloadSalaryPdf = (summary) => {
                 </td>
                 <td class="py-4 px-4 text-center border-r border-gray-200">
                   <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
-                  >
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                     {{ summary.totalApprovedUnpaidLeaveDays }} hari
                   </span>
                 </td>
@@ -1508,12 +1361,10 @@ const downloadSalaryPdf = (summary) => {
                   </div>
                 </td>
                 <td class="py-4 px-4 text-right border-r border-gray-200">
-                  <div
-                    :class="[
-                      'text-sm font-bold',
-                      summary.sisaGaji >= 0 ? 'text-green-600' : 'text-red-600',
-                    ]"
-                  >
+                  <div :class="[
+                    'text-sm font-bold',
+                    summary.sisaGaji >= 0 ? 'text-green-600' : 'text-red-600',
+                  ]">
                     {{ formatCurrency(summary.sisaGaji) }}
                   </div>
                   <div class="text-xs text-gray-500">
@@ -1521,16 +1372,12 @@ const downloadSalaryPdf = (summary) => {
                   </div>
                 </td>
                 <td class="py-4 px-4 text-center">
-                  <button
-                    @click="downloadSalaryPdf(summary)"
-                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
-                  >
+                  <button @click="downloadSalaryPdf(summary)"
+                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
                     <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fill-rule="evenodd"
+                      <path fill-rule="evenodd"
                         d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                        clip-rule="evenodd"
-                      />
+                        clip-rule="evenodd" />
                     </svg>
                     PDF
                   </button>
@@ -1547,98 +1394,50 @@ const downloadSalaryPdf = (summary) => {
       </p>
     </div>
 
-    <div
-      v-if="showAddUserModal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50"
-    >
+    <div v-if="showAddUserModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
         <h2 class="text-xl font-bold mb-4">Tambah User Baru</h2>
         <form @submit.prevent="handleAddUser">
           <div class="mb-4">
-            <label for="newUsername" class="block text-gray-700 text-sm font-bold mb-2"
-              >Username:</label
-            >
-            <input
-              type="text"
-              id="newUsername"
-              v-model="newUser.username"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="newUsername" class="block text-gray-700 text-sm font-bold mb-2">Username:</label>
+            <input type="text" id="newUsername" v-model="newUser.username"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="newPassword" class="block text-gray-700 text-sm font-bold mb-2"
-              >Password:</label
-            >
-            <input
-              type="password"
-              id="newPassword"
-              v-model="newUser.password"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="newPassword" class="block text-gray-700 text-sm font-bold mb-2">Password:</label>
+            <input type="password" id="newPassword" v-model="newUser.password"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="newNamaLengkap" class="block text-gray-700 text-sm font-bold mb-2"
-              >Nama Lengkap:</label
-            >
-            <input
-              type="text"
-              id="newNamaLengkap"
-              v-model="newUser.namaLengkap"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="newNamaLengkap" class="block text-gray-700 text-sm font-bold mb-2">Nama Lengkap:</label>
+            <input type="text" id="newNamaLengkap" v-model="newUser.namaLengkap"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="newTanggalMasukKerja" class="block text-gray-700 text-sm font-bold mb-2"
-              >Tanggal Masuk Kerja:</label
-            >
-            <input
-              type="date"
-              id="newTanggalMasukKerja"
-              v-model="newUser.tanggalMasukKerja"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="newTanggalMasukKerja" class="block text-gray-700 text-sm font-bold mb-2">Tanggal Masuk
+              Kerja:</label>
+            <input type="date" id="newTanggalMasukKerja" v-model="newUser.tanggalMasukKerja"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="newGaji" class="block text-gray-700 text-sm font-bold mb-2"
-              >Gaji (IDR):</label
-            >
-            <input
-              type="number"
-              id="newGaji"
-              v-model.number="newUser.gaji"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-              min="0"
-            />
+            <label for="newGaji" class="block text-gray-700 text-sm font-bold mb-2">Gaji (IDR):</label>
+            <input type="number" id="newGaji" v-model.number="newUser.gaji"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required min="0" />
           </div>
           <div class="mb-6">
             <label for="newRole" class="block text-gray-700 text-sm font-bold mb-2">Role:</label>
-            <select
-              id="newRole"
-              v-model="newUser.role"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            >
+            <select id="newRole" v-model="newUser.role" class="shadow border rounded w-full py-2 px-3 text-gray-700"
+              required>
               <option v-for="role in roles" :key="role" :value="role">{{ role }}</option>
             </select>
           </div>
           <div class="flex justify-end space-x-2">
-            <button
-              type="button"
-              @click="showAddUserModal = false"
-              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
-            >
+            <button type="button" @click="showAddUserModal = false"
+              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
               Batal
             </button>
-            <button
-              type="submit"
-              :disabled="userStore.loading"
-              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
+            <button type="submit" :disabled="userStore.loading"
+              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
               <span v-if="userStore.loading">Menyimpan...</span>
               <span v-else>Tambah User</span>
             </button>
@@ -1647,97 +1446,52 @@ const downloadSalaryPdf = (summary) => {
       </div>
     </div>
 
-    <div
-      v-if="showEditUserModal && editedUser"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50"
-    >
+    <div v-if="showEditUserModal && editedUser"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
         <h2 class="text-xl font-bold mb-4">Edit User</h2>
         <form @submit.prevent="handleUpdateUser">
           <div class="mb-4">
-            <label for="editUsername" class="block text-gray-700 text-sm font-bold mb-2"
-              >Username:</label
-            >
-            <input
-              type="text"
-              id="editUsername"
-              v-model="editedUser.username"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="editUsername" class="block text-gray-700 text-sm font-bold mb-2">Username:</label>
+            <input type="text" id="editUsername" v-model="editedUser.username"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="editPassword" class="block text-gray-700 text-sm font-bold mb-2"
-              >Password (isi jika ingin mengubah):</label
-            >
-            <input
-              type="password"
-              id="editPassword"
-              v-model="editedUser.password"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-            />
+            <label for="editPassword" class="block text-gray-700 text-sm font-bold mb-2">Password (isi jika ingin
+              mengubah):</label>
+            <input type="password" id="editPassword" v-model="editedUser.password"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" />
           </div>
           <div class="mb-4">
-            <label for="editNamaLengkap" class="block text-gray-700 text-sm font-bold mb-2"
-              >Nama Lengkap:</label
-            >
-            <input
-              type="text"
-              id="editNamaLengkap"
-              v-model="editedUser.namaLengkap"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="editNamaLengkap" class="block text-gray-700 text-sm font-bold mb-2">Nama Lengkap:</label>
+            <input type="text" id="editNamaLengkap" v-model="editedUser.namaLengkap"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="editTanggalMasukKerja" class="block text-gray-700 text-sm font-bold mb-2"
-              >Tanggal Masuk Kerja:</label
-            >
-            <input
-              type="date"
-              id="editTanggalMasukKerja"
-              v-model="editedUser.tanggalMasukKerja"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="editTanggalMasukKerja" class="block text-gray-700 text-sm font-bold mb-2">Tanggal Masuk
+              Kerja:</label>
+            <input type="date" id="editTanggalMasukKerja" v-model="editedUser.tanggalMasukKerja"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="editGaji" class="block text-gray-700 text-sm font-bold mb-2"
-              >Gaji (IDR):</label
-            >
-            <input
-              type="number"
-              id="editGaji"
-              v-model.number="editedUser.gaji"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-              min="0"
-            />
+            <label for="editGaji" class="block text-gray-700 text-sm font-bold mb-2">Gaji (IDR):</label>
+            <input type="number" id="editGaji" v-model.number="editedUser.gaji"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required min="0" />
           </div>
           <div class="mb-6">
             <label for="editRole" class="block text-gray-700 text-sm font-bold mb-2">Role:</label>
-            <select
-              id="editRole"
-              v-model="editedUser.role"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            >
+            <select id="editRole" v-model="editedUser.role" class="shadow border rounded w-full py-2 px-3 text-gray-700"
+              required>
               <option v-for="role in roles" :key="role" :value="role">{{ role }}</option>
             </select>
           </div>
           <div class="flex justify-end space-x-2">
-            <button
-              type="button"
-              @click="showEditUserModal = false"
-              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
-            >
+            <button type="button" @click="showEditUserModal = false"
+              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
               Batal
             </button>
-            <button
-              type="submit"
-              :disabled="userStore.loading"
-              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
+            <button type="submit" :disabled="userStore.loading"
+              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
               <span v-if="userStore.loading">Menyimpan...</span>
               <span v-else>Update User</span>
             </button>
@@ -1746,23 +1500,14 @@ const downloadSalaryPdf = (summary) => {
       </div>
     </div>
 
-    <div
-      v-if="showAddCutiModal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50"
-    >
+    <div v-if="showAddCutiModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
         <h2 class="text-xl font-bold mb-4">Tambahkan Cuti Baru</h2>
         <form @submit.prevent="handleAddCuti">
           <div class="mb-4">
-            <label for="cutiUser" class="block text-gray-700 text-sm font-bold mb-2"
-              >Karyawan:</label
-            >
-            <select
-              id="cutiUser"
-              v-model="newCuti.userId"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            >
+            <label for="cutiUser" class="block text-gray-700 text-sm font-bold mb-2">Karyawan:</label>
+            <select id="cutiUser" v-model="newCuti.userId" class="shadow border rounded w-full py-2 px-3 text-gray-700"
+              required>
               <option value="" disabled>Pilih Karyawan</option>
               <option v-for="user in userStore.users" :key="user.id" :value="user.id">
                 {{ user.namaLengkap }} ({{ user.username }})
@@ -1770,39 +1515,21 @@ const downloadSalaryPdf = (summary) => {
             </select>
           </div>
           <div class="mb-4">
-            <label for="newCutiTanggalMulai" class="block text-gray-700 text-sm font-bold mb-2"
-              >Tanggal Mulai Cuti:</label
-            >
-            <input
-              type="date"
-              id="newCutiTanggalMulai"
-              v-model="newCuti.tanggalMulai"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="newCutiTanggalMulai" class="block text-gray-700 text-sm font-bold mb-2">Tanggal Mulai
+              Cuti:</label>
+            <input type="date" id="newCutiTanggalMulai" v-model="newCuti.tanggalMulai"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="newCutiTanggalSelesai" class="block text-gray-700 text-sm font-bold mb-2"
-              >Tanggal Selesai Cuti:</label
-            >
-            <input
-              type="date"
-              id="newCutiTanggalSelesai"
-              v-model="newCuti.tanggalSelesai"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="newCutiTanggalSelesai" class="block text-gray-700 text-sm font-bold mb-2">Tanggal Selesai
+              Cuti:</label>
+            <input type="date" id="newCutiTanggalSelesai" v-model="newCuti.tanggalSelesai"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="newCutiJenisCuti" class="block text-gray-700 text-sm font-bold mb-2"
-              >Jenis Cuti:</label
-            >
-            <select
-              id="newCutiJenisCuti"
-              v-model="newCuti.jenisCuti"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            >
+            <label for="newCutiJenisCuti" class="block text-gray-700 text-sm font-bold mb-2">Jenis Cuti:</label>
+            <select id="newCutiJenisCuti" v-model="newCuti.jenisCuti"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required>
               <option value="" disabled>Pilih Jenis Cuti</option>
               <option v-for="jenis in jenisCutiOptions" :key="jenis" :value="jenis">
                 {{ jenis }}
@@ -1810,29 +1537,18 @@ const downloadSalaryPdf = (summary) => {
             </select>
           </div>
           <div class="mb-6">
-            <label for="newCutiKeperluan" class="block text-gray-700 text-sm font-bold mb-2"
-              >Keperluan (Opsional):</label
-            >
-            <textarea
-              id="newCutiKeperluan"
-              v-model="newCuti.keperluan"
-              rows="3"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-            ></textarea>
+            <label for="newCutiKeperluan" class="block text-gray-700 text-sm font-bold mb-2">Keperluan
+              (Opsional):</label>
+            <textarea id="newCutiKeperluan" v-model="newCuti.keperluan" rows="3"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700"></textarea>
           </div>
           <div class="flex justify-end space-x-2">
-            <button
-              type="button"
-              @click="showAddCutiModal = false"
-              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
-            >
+            <button type="button" @click="showAddCutiModal = false"
+              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
               Batal
             </button>
-            <button
-              type="submit"
-              :disabled="cutiStore.loading"
-              class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-            >
+            <button type="submit" :disabled="cutiStore.loading"
+              class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
               <span v-if="cutiStore.loading">Mengajukan...</span>
               <span v-else>Tambah Cuti</span>
             </button>
@@ -1841,10 +1557,8 @@ const downloadSalaryPdf = (summary) => {
       </div>
     </div>
 
-    <div
-      v-if="showEditCutiModal && editedCuti"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50"
-    >
+    <div v-if="showEditCutiModal && editedCuti"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
         <h2 class="text-xl font-bold mb-4">Edit Cuti</h2>
         <form @submit.prevent="handleUpdateCuti">
@@ -1855,80 +1569,44 @@ const downloadSalaryPdf = (summary) => {
             </p>
           </div>
           <div class="mb-4">
-            <label for="editCutiTanggalMulai" class="block text-gray-700 text-sm font-bold mb-2"
-              >Tanggal Mulai Cuti:</label
-            >
-            <input
-              type="date"
-              id="editCutiTanggalMulai"
-              v-model="editedCuti.tanggalMulai"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="editCutiTanggalMulai" class="block text-gray-700 text-sm font-bold mb-2">Tanggal Mulai
+              Cuti:</label>
+            <input type="date" id="editCutiTanggalMulai" v-model="editedCuti.tanggalMulai"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="editCutiTanggalSelesai" class="block text-gray-700 text-sm font-bold mb-2"
-              >Tanggal Selesai Cuti:</label
-            >
-            <input
-              type="date"
-              id="editCutiTanggalSelesai"
-              v-model="editedCuti.tanggalSelesai"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            />
+            <label for="editCutiTanggalSelesai" class="block text-gray-700 text-sm font-bold mb-2">Tanggal Selesai
+              Cuti:</label>
+            <input type="date" id="editCutiTanggalSelesai" v-model="editedCuti.tanggalSelesai"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
           </div>
           <div class="mb-4">
-            <label for="editCutiJenisCuti" class="block text-gray-700 text-sm font-bold mb-2"
-              >Jenis Cuti:</label
-            >
-            <select
-              id="editCutiJenisCuti"
-              v-model="editedCuti.jenisCuti"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-              required
-            >
+            <label for="editCutiJenisCuti" class="block text-gray-700 text-sm font-bold mb-2">Jenis Cuti:</label>
+            <select id="editCutiJenisCuti" v-model="editedCuti.jenisCuti"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700" required>
               <option v-for="jenis in jenisCutiOptions" :key="jenis" :value="jenis">
                 {{ jenis }}
               </option>
             </select>
           </div>
           <div class="mb-4">
-            <label for="editCutiKeperluan" class="block text-gray-700 text-sm font-bold mb-2"
-              >Keperluan (Opsional):</label
-            >
-            <textarea
-              id="editCutiKeperluan"
-              v-model="editedCuti.keperluan"
-              rows="3"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700"
-            ></textarea>
+            <label for="editCutiKeperluan" class="block text-gray-700 text-sm font-bold mb-2">Keperluan
+              (Opsional):</label>
+            <textarea id="editCutiKeperluan" v-model="editedCuti.keperluan" rows="3"
+              class="shadow border rounded w-full py-2 px-3 text-gray-700"></textarea>
           </div>
           <div class="mb-6">
-            <label for="editCutiDisetujui" class="block text-gray-700 text-sm font-bold mb-2"
-              >Disetujui:</label
-            >
-            <input
-              type="checkbox"
-              id="editCutiDisetujui"
-              v-model="editedCuti.disetujui"
-              class="mr-2 leading-tight"
-            />
+            <label for="editCutiDisetujui" class="block text-gray-700 text-sm font-bold mb-2">Disetujui:</label>
+            <input type="checkbox" id="editCutiDisetujui" v-model="editedCuti.disetujui" class="mr-2 leading-tight" />
             <span class="text-sm">Centang jika disetujui</span>
           </div>
           <div class="flex justify-end space-x-2">
-            <button
-              type="button"
-              @click="showEditCutiModal = false"
-              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
-            >
+            <button type="button" @click="showEditCutiModal = false"
+              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
               Batal
             </button>
-            <button
-              type="submit"
-              :disabled="cutiStore.loading"
-              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
+            <button type="submit" :disabled="cutiStore.loading"
+              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
               <span v-if="cutiStore.loading">Memperbarui...</span>
               <span v-else>Update Cuti</span>
             </button>

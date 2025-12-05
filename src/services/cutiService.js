@@ -8,11 +8,15 @@ export default {
   getMyCutiById(id) {
     return apiClient.get(`/cuti/my/${id}`);
   },
+
   createMyCuti(cutiData) {
     return apiClient.post("/cuti/my", cutiData);
   },
   getAllCuti(filters = {}) {
     return apiClient.get("/cuti", { params: filters });
+  },
+  getCutiActive(filters = {}) {
+    return apiClient.get("/cuti/?userStatus=active");
   },
   getCutiById(id) {
     return apiClient.get(`/cuti/${id}`);

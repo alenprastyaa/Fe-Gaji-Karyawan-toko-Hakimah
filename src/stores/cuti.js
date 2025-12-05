@@ -83,7 +83,6 @@ export const useCutiStore = defineStore("cuti", {
       this.error = null;
       try {
         const response = await cutiService.createMyCuti(cutiData);
-        // Add to myCuti array
         this.myCuti.unshift(response.data.data.cuti);
 
         Swal.fire({
@@ -91,8 +90,6 @@ export const useCutiStore = defineStore("cuti", {
           title: "Berhasil",
           text: "Pengajuan cuti berhasil disubmit dan menunggu persetujuan!",
         });
-
-        // Redirect to my cuti list
         router.push("/my-bons");
         return true;
       } catch (err) {
@@ -102,10 +99,6 @@ export const useCutiStore = defineStore("cuti", {
         this.loading = false;
       }
     },
-
-    // ===== ACTIONS UNTUK ADMIN =====
-
-    // Fetch semua cuti (admin only)
     async fetchAllCuti(filters = {}) {
       this.loading = true;
       this.error = null;
@@ -119,8 +112,19 @@ export const useCutiStore = defineStore("cuti", {
         this.loading = false;
       }
     },
-
-    // Fetch detail cuti berdasarkan ID (admin only)
+    async fetchCutiActive(filters = {}) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await cutiService.getCutiActive();
+        this.allCuti = response.data.data.cutis;
+        this.pagination = response.data.data.pagination;
+      } catch (err) {
+        this.handleError(err, "Gagal memuat semua data cuti.");
+      } finally {
+        this.loading = false;
+      }
+    },
     async fetchCutiById(id) {
       this.loading = true;
       this.error = null;
@@ -135,8 +139,6 @@ export const useCutiStore = defineStore("cuti", {
         this.loading = false;
       }
     },
-
-    // Admin membuat cuti untuk user lain
     async createCuti(cutiData) {
       this.loading = true;
       this.error = null;

@@ -10,7 +10,7 @@ const currentMonth = new Date().getMonth() + 1;
 const currentYear = new Date().getFullYear();
 
 onMounted(async () => {
-  await Promise.all([userStore.fetchAllUsers(), bonStore.fetchAllBons({})]);
+  await Promise.all([userStore.userActive(), bonStore.fetchBonActive({})]);
 });
 
 const totalUsers = computed(() => userStore.users?.length || 0);
@@ -157,8 +157,7 @@ const getMaxChartValue = computed(() => {
   <div class="p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
     <div class="mb-8">
       <h1
-        class="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2"
-      >
+        class="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
         Dashboard Admin
       </h1>
       <p class="text-gray-600 text-lg">Ringkasan data bon karyawan dan manajemen pengguna</p>
@@ -166,8 +165,7 @@ const getMaxChartValue = computed(() => {
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div
-        class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-      >
+        class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Pengguna</p>
@@ -180,20 +178,16 @@ const getMaxChartValue = computed(() => {
           </div>
           <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-2xl">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-              ></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z">
+              </path>
             </svg>
           </div>
         </div>
       </div>
 
       <div
-        class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-      >
+        class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">
@@ -204,20 +198,16 @@ const getMaxChartValue = computed(() => {
           </div>
           <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-4 rounded-2xl">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              ></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+              </path>
             </svg>
           </div>
         </div>
       </div>
 
       <div
-        class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-      >
+        class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Nominal</p>
@@ -228,20 +218,16 @@ const getMaxChartValue = computed(() => {
           </div>
           <div class="bg-gradient-to-r from-green-500 to-green-600 p-4 rounded-2xl">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-              ></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1">
+              </path>
             </svg>
           </div>
         </div>
       </div>
 
       <div
-        class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-      >
+        class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">
@@ -254,12 +240,8 @@ const getMaxChartValue = computed(() => {
           </div>
           <div class="bg-gradient-to-r from-orange-500 to-orange-600 p-4 rounded-2xl">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              ></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
           </div>
         </div>
@@ -269,18 +251,9 @@ const getMaxChartValue = computed(() => {
     <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
       <div class="p-6 border-b border-gray-100">
         <h3 class="text-xl font-bold text-gray-900 flex items-center">
-          <svg
-            class="w-6 h-6 mr-3 text-purple-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            ></path>
+          <svg class="w-6 h-6 mr-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           5 Transaksi Terbaru
         </h3>
@@ -307,11 +280,8 @@ const getMaxChartValue = computed(() => {
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-              <tr
-                v-for="bon in bonTerbaru"
-                :key="bon.id"
-                class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 transition-all duration-200"
-              >
+              <tr v-for="bon in bonTerbaru" :key="bon.id"
+                class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 transition-all duration-200">
                 <td class="py-4 px-6 text-sm text-gray-700 font-medium">
                   {{ bon.formattedTanggal }}
                 </td>
@@ -321,10 +291,7 @@ const getMaxChartValue = computed(() => {
                 <td class="py-4 px-6 text-sm font-bold text-green-600">
                   {{ bon.formattedJumlahBon }}
                 </td>
-                <td
-                  class="py-4 px-6 text-sm text-gray-700 max-w-xs truncate"
-                  :title="bon.keperluan"
-                >
+                <td class="py-4 px-6 text-sm text-gray-700 max-w-xs truncate" :title="bon.keperluan">
                   {{ bon.keperluan }}
                 </td>
               </tr>
@@ -333,16 +300,12 @@ const getMaxChartValue = computed(() => {
         </div>
 
         <div class="md:hidden space-y-4">
-          <div
-            v-for="bon in bonTerbaru"
-            :key="bon.id"
-            class="bg-white rounded-xl shadow-lg border border-gray-200 p-4 hover:shadow-xl transition-all duration-200 hover:border-purple-300"
-          >
+          <div v-for="bon in bonTerbaru" :key="bon.id"
+            class="bg-white rounded-xl shadow-lg border border-gray-200 p-4 hover:shadow-xl transition-all duration-200 hover:border-purple-300">
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center space-x-3">
                 <div
-                  class="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md"
-                >
+                  class="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
                   <span class="text-white font-bold text-sm">
                     {{ bon.karyawanNama.charAt(0).toUpperCase() }}
                   </span>
@@ -355,23 +318,17 @@ const getMaxChartValue = computed(() => {
 
               <div class="text-right">
                 <span
-                  class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-green-100 text-green-800 shadow-sm"
-                >
+                  class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-green-100 text-green-800 shadow-sm">
                   {{ bon.formattedJumlahBon }}
                 </span>
               </div>
             </div>
 
-            <div
-              class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 border border-purple-100"
-            >
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 border border-purple-100">
               <div class="text-xs font-medium text-purple-600 mb-1 uppercase tracking-wider">
                 Keperluan:
               </div>
-              <div
-                v-if="bon.keperluan && bon.keperluan.trim()"
-                class="text-sm text-gray-800 leading-relaxed"
-              >
+              <div v-if="bon.keperluan && bon.keperluan.trim()" class="text-sm text-gray-800 leading-relaxed">
                 {{ bon.keperluan }}
               </div>
               <div v-else class="text-sm text-gray-400 italic">Tidak ada keterangan</div>
@@ -390,16 +347,12 @@ const getMaxChartValue = computed(() => {
         </div>
 
         <div class="hidden xs:block sm:hidden space-y-3">
-          <div
-            v-for="bon in bonTerbaru"
-            :key="bon.id"
-            class="bg-white rounded-lg shadow border border-gray-200 p-3 hover:shadow-md transition-shadow duration-200"
-          >
+          <div v-for="bon in bonTerbaru" :key="bon.id"
+            class="bg-white rounded-lg shadow border border-gray-200 p-3 hover:shadow-md transition-shadow duration-200">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
                 <div
-                  class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center"
-                >
+                  class="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
                   <span class="text-white font-bold text-xs">
                     {{ bon.karyawanNama.charAt(0).toUpperCase() }}
                   </span>
@@ -414,42 +367,28 @@ const getMaxChartValue = computed(() => {
               </span>
             </div>
 
-            <div
-              v-if="bon.keperluan && bon.keperluan.trim()"
-              class="text-xs text-gray-600 bg-gray-50 p-2 rounded line-clamp-2"
-            >
+            <div v-if="bon.keperluan && bon.keperluan.trim()"
+              class="text-xs text-gray-600 bg-gray-50 p-2 rounded line-clamp-2">
               {{ bon.keperluan }}
             </div>
           </div>
         </div>
       </div>
       <div v-else class="p-12 text-center text-gray-500">
-        <svg
-          class="w-16 h-16 mx-auto mb-4 text-gray-300"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          ></path>
+        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+          </path>
         </svg>
         <p class="text-lg font-medium">Belum ada transaksi</p>
         <p class="text-sm text-gray-400 mt-1">Transaksi bon akan muncul di sini</p>
       </div>
     </div>
 
-    <div
-      v-if="bonStore.loading || userStore.loading"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    >
+    <div v-if="bonStore.loading || userStore.loading"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white rounded-2xl p-8 shadow-2xl text-center">
-        <div
-          class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"
-        ></div>
+        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
         <p class="text-gray-700 font-semibold">Memuat data dashboard...</p>
       </div>
     </div>

@@ -10,6 +10,9 @@ export default {
   getAllBons(filters = {}) {
     return apiClient.get("/bon", { params: filters });
   },
+  getBonActive(filters = {}) {
+    return apiClient.get("/bon?userStatus=active", { params: filters });
+  },
   updateBon(id, bonData) {
     return apiClient.put(`/bon/${id}`, bonData);
   },

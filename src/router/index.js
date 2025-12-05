@@ -62,6 +62,11 @@ const routes = [
         component: () => import("../views/Admin/UserManagementPage.vue"),
       },
       {
+        path: "users-non",
+        name: "UserManagementNonActive",
+        component: () => import("../views/Admin/UserNonActive.vue"),
+      },
+      {
         path: "all-bons",
         name: "AllBons",
         component: () => import("../views/Admin/AllBonsPage.vue"),

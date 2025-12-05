@@ -34,8 +34,8 @@ const newBon = ref({
 const editedBon = ref(null);
 
 onMounted(async () => {
-  await bonStore.fetchAllBons({});
-  await userStore.fetchAllUsers();
+  await bonStore.fetchBonActive({});
+  await userStore.userActive();
   console.log("Saat ini", currentUser?.role);
 });
 
@@ -282,8 +282,8 @@ const closeModal = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-    <div class="max-w-full mx-auto">
+  <div class="min-h-screen">
+    <div class="max-w-full mx-auto p-4">
       <div class="mb-8">
         <div class="flex items-center justify-between">
           <div>
@@ -308,25 +308,13 @@ const closeModal = () => {
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex items-center space-x-4">
               <div class="relative">
-                <svg
-                  class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none"
+                  stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <input
-                  v-model="searchTerm"
-                  type="text"
-                  placeholder="Cari karyawan atau keterangan..."
-                  class="shadow-lg pl-10 pr-4 py-2.5 w-64 rounded-lg border border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-                />
+                <input v-model="searchTerm" type="text" placeholder="Cari karyawan atau keterangan..."
+                  class="shadow-lg pl-10 pr-4 py-2.5 w-64 rounded-lg border border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200" />
               </div>
             </div>
 
@@ -353,30 +341,20 @@ const closeModal = () => {
           </div>
         </div>
 
-        <div
-          v-if="bonStore.loading || userStore.loading"
-          class="flex items-center justify-center py-16"
-        >
+        <div v-if="bonStore.loading || userStore.loading" class="flex items-center justify-center py-16">
           <div class="text-center">
-            <div
-              class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"
-            ></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4">
+            </div>
             <p class="text-gray-600 font-medium">Memuat data bon...</p>
           </div>
         </div>
 
-        <div
-          v-else-if="bonStore.error || userStore.error"
-          class="mx-6 my-6 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl"
-        >
+        <div v-else-if="bonStore.error || userStore.error"
+          class="mx-6 my-6 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl">
           <div class="flex items-center">
             <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
               <strong class="font-semibold">Terjadi Kesalahan!</strong>
@@ -397,29 +375,19 @@ const closeModal = () => {
                 <!-- Table Header -->
                 <thead class="bg-gray-200 border-b border-gray-200">
                   <tr>
-                    <th
-                      class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                    >
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Karyawan
                     </th>
-                    <th
-                      class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                    >
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Tanggal
                     </th>
-                    <th
-                      class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                    >
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Keperluan
                     </th>
-                    <th
-                      class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                    >
+                    <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Jumlah
                     </th>
-                    <th
-                      class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                    >
+                    <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Aksi
                     </th>
                   </tr>
@@ -430,15 +398,13 @@ const closeModal = () => {
                   <template v-for="group in paginatedGroups" :key="group.employeeName">
                     <!-- Employee Group Header Row -->
                     <tr
-                      class="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 border-t-2 border-t-gray-300"
-                    >
+                      class="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 border-t-2 border-t-gray-300">
                       <td class="px-6 py-4" colspan="5">
                         <div class="flex items-center justify-between">
                           <div class="flex items-center space-x-3">
                             <!-- Avatar -->
                             <div
-                              class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md"
-                            >
+                              class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md">
                               <span class="text-white font-bold text-sm">
                                 {{ group.employeeName.charAt(0).toUpperCase() }}
                               </span>
@@ -448,8 +414,7 @@ const closeModal = () => {
                                 {{ group.employeeName }}
                               </h3>
                               <span
-                                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800"
-                              >
+                                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
                                 {{ group.totalCount }} bon
                               </span>
                             </div>
@@ -465,13 +430,9 @@ const closeModal = () => {
                     </tr>
 
                     <!-- Employee's Bon Records -->
-                    <tr
-                      v-for="bon in group.bons.sort(
-                        (a, b) => new Date(b.tanggal) - new Date(a.tanggal)
-                      )"
-                      :key="bon.id"
-                      class="hover:bg-gray-50 transition-colors duration-200 border-b border-gray-100"
-                    >
+                    <tr v-for="bon in group.bons.sort(
+                      (a, b) => new Date(b.tanggal) - new Date(a.tanggal)
+                    )" :key="bon.id" class="hover:bg-gray-50 transition-colors duration-200 border-b border-gray-100">
                       <!-- Employee Name (Empty for grouped records) -->
                       <td class="px-6 py-4">
                         <div class="w-8 h-0.5 bg-gray-300 ml-4"></div>
@@ -502,8 +463,7 @@ const closeModal = () => {
                       <!-- Amount -->
                       <td class="px-6 py-4 text-right">
                         <span
-                          class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-800"
-                        >
+                          class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-800">
                           {{ formatCurrency(bon.jumlahBon) }}
                         </span>
                       </td>
@@ -511,22 +471,11 @@ const closeModal = () => {
                       <!-- Actions -->
                       <td class="px-6 py-4">
                         <div class="flex items-center justify-center space-x-2">
-                          <button
-                            @click="handleDeleteBon(bon.id, group.employeeName, bon.jumlahBon)"
-                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold shadow hover:shadow-md transform hover:scale-105 transition-all duration-200 flex items-center space-x-1"
-                          >
-                            <svg
-                              class="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
+                          <button @click="handleDeleteBon(bon.id, group.employeeName, bon.jumlahBon)"
+                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold shadow hover:shadow-md transform hover:scale-105 transition-all duration-200 flex items-center space-x-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                             <span>Hapus</span>
                           </button>
@@ -549,14 +498,12 @@ const closeModal = () => {
                 <template v-for="group in paginatedGroups" :key="group.employeeName">
                   <!-- Employee Group Header Card -->
                   <div
-                    class="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm"
-                  >
+                    class="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm">
                     <div class="flex items-center justify-between mb-3">
                       <div class="flex items-center space-x-3">
                         <!-- Avatar -->
                         <div
-                          class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md"
-                        >
+                          class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md">
                           <span class="text-white font-bold text-lg">
                             {{ group.employeeName.charAt(0).toUpperCase() }}
                           </span>
@@ -566,8 +513,7 @@ const closeModal = () => {
                             {{ group.employeeName }}
                           </h3>
                           <span
-                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800"
-                          >
+                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
                             {{ group.totalCount }} bon
                           </span>
                         </div>
@@ -589,13 +535,10 @@ const closeModal = () => {
 
                   <!-- Employee's Bon Records Cards -->
                   <div class="space-y-3 ml-4">
-                    <div
-                      v-for="bon in group.bons.sort(
-                        (a, b) => new Date(b.tanggal) - new Date(a.tanggal)
-                      )"
-                      :key="bon.id"
-                      class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
-                    >
+                    <div v-for="bon in group.bons.sort(
+                      (a, b) => new Date(b.tanggal) - new Date(a.tanggal)
+                    )" :key="bon.id"
+                      class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
                       <!-- Bon Item Header -->
                       <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center space-x-2">
@@ -605,8 +548,7 @@ const closeModal = () => {
                           </span>
                         </div>
                         <span
-                          class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-800"
-                        >
+                          class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-800">
                           {{ formatCurrency(bon.jumlahBon) }}
                         </span>
                       </div>
@@ -614,10 +556,7 @@ const closeModal = () => {
                       <!-- Keperluan -->
                       <div class="mb-4">
                         <div class="text-xs font-medium text-gray-500 mb-1">Keperluan:</div>
-                        <div
-                          v-if="bon.keperluan"
-                          class="text-sm text-gray-800 bg-gray-50 p-2 rounded"
-                        >
+                        <div v-if="bon.keperluan" class="text-sm text-gray-800 bg-gray-50 p-2 rounded">
                           {{ bon.keperluan }}
                         </div>
                         <div v-else class="text-sm text-gray-400 italic bg-gray-50 p-2 rounded">
@@ -627,22 +566,11 @@ const closeModal = () => {
 
                       <!-- Action Button -->
                       <div class="flex justify-end">
-                        <button
-                          @click="handleDeleteBon(bon.id, group.employeeName, bon.jumlahBon)"
-                          class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-semibold shadow hover:shadow-md transition-all duration-200 flex items-center space-x-2"
-                        >
-                          <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
+                        <button @click="handleDeleteBon(bon.id, group.employeeName, bon.jumlahBon)"
+                          class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-semibold shadow hover:shadow-md transition-all duration-200 flex items-center space-x-2">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                           <span>Hapus</span>
                         </button>
@@ -651,9 +579,7 @@ const closeModal = () => {
                   </div>
 
                   <!-- Divider between employees -->
-                  <div
-                    class="h-4 bg-gradient-to-r from-transparent via-gray-300 to-transparent"
-                  ></div>
+                  <div class="h-4 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                 </template>
               </div>
             </div>
@@ -673,28 +599,15 @@ const closeModal = () => {
       </div>
     </div>
 
-    <div
-      v-if="showAddBonModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      @click.self="closeModal"
-    >
-      <div
-        class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-200"
-      >
+    <div v-if="showAddBonModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      @click.self="closeModal">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-200">
         <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 rounded-t-2xl">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-white">Tambah Bon Baru</h2>
-            <button
-              @click="closeModal"
-              class="text-white hover:text-gray-200 transition-colors duration-150"
-            >
+            <button @click="closeModal" class="text-white hover:text-gray-200 transition-colors duration-150">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
@@ -705,12 +618,9 @@ const closeModal = () => {
             <label for="bonUser" class="block text-sm font-semibold text-gray-700 mb-2">
               Karyawan *
             </label>
-            <select
-              id="bonUser"
-              v-model="newBon.userId"
+            <select id="bonUser" v-model="newBon.userId"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-              required
-            >
+              required>
               <option value="" disabled>Pilih Karyawan</option>
               <option v-for="user in userStore.users" :key="user.id" :value="user.id">
                 {{ user.namaLengkap }} ({{ user.username }})
@@ -722,69 +632,40 @@ const closeModal = () => {
             <label for="newBonTanggal" class="block text-sm font-semibold text-gray-700 mb-2">
               Tanggal Bon *
             </label>
-            <input
-              type="date"
-              id="newBonTanggal"
-              v-model="newBon.tanggalBon"
+            <input type="date" id="newBonTanggal" v-model="newBon.tanggalBon"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-              required
-            />
+              required />
           </div>
 
           <div>
             <label for="newBonJumlah" class="block text-sm font-semibold text-gray-700 mb-2">
               Jumlah Bon (IDR) *
             </label>
-            <input
-              type="number"
-              id="newBonJumlah"
-              v-model.number="newBon.jumlahBon"
+            <input type="number" id="newBonJumlah" v-model.number="newBon.jumlahBon"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-              required
-              min="1"
-              placeholder="0"
-            />
+              required min="1" placeholder="0" />
           </div>
 
           <div>
             <label for="newBonKeterangan" class="block text-sm font-semibold text-gray-700 mb-2">
               Keterangan
             </label>
-            <textarea
-              id="newBonKeterangan"
-              v-model="newBon.keterangan"
-              rows="3"
+            <textarea id="newBonKeterangan" v-model="newBon.keterangan" rows="3"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 resize-none"
-              placeholder="Keterangan tambahan (opsional)"
-            ></textarea>
+              placeholder="Keterangan tambahan (opsional)"></textarea>
           </div>
 
           <div class="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              @click="closeModal"
-              class="px-6 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg transition-colors duration-200"
-            >
+            <button type="button" @click="closeModal"
+              class="px-6 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg transition-colors duration-200">
               Batal
             </button>
-            <button
-              type="submit"
-              :disabled="bonStore.loading"
-              class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              <svg
-                v-if="bonStore.loading"
-                class="animate-spin w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
+            <button type="submit" :disabled="bonStore.loading"
+              class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
+              <svg v-if="bonStore.loading" class="animate-spin w-4 h-4" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span v-if="bonStore.loading">Menyimpan...</span>
               <span v-else>Tambah Bon</span>
@@ -794,28 +675,15 @@ const closeModal = () => {
       </div>
     </div>
 
-    <div
-      v-if="showEditBonModal && editedBon"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      @click.self="closeModal"
-    >
-      <div
-        class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-200"
-      >
+    <div v-if="showEditBonModal && editedBon"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" @click.self="closeModal">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-200">
         <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4 rounded-t-2xl">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-white">Edit Bon</h2>
-            <button
-              @click="closeModal"
-              class="text-white hover:text-gray-200 transition-colors duration-150"
-            >
+            <button @click="closeModal" class="text-white hover:text-gray-200 transition-colors duration-150">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
@@ -833,68 +701,40 @@ const closeModal = () => {
             <label for="editBonTanggal" class="block text-sm font-semibold text-gray-700 mb-2">
               Tanggal Bon *
             </label>
-            <input
-              type="date"
-              id="editBonTanggal"
-              v-model="editedBon.tanggalBon"
+            <input type="date" id="editBonTanggal" v-model="editedBon.tanggalBon"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all duration-200"
-              required
-            />
+              required />
           </div>
 
           <div>
             <label for="editBonJumlah" class="block text-sm font-semibold text-gray-700 mb-2">
               Jumlah Bon (IDR) *
             </label>
-            <input
-              type="number"
-              id="editBonJumlah"
-              v-model.number="editedBon.jumlahBon"
+            <input type="number" id="editBonJumlah" v-model.number="editedBon.jumlahBon"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all duration-200"
-              required
-              min="1"
-            />
+              required min="1" />
           </div>
 
           <div>
             <label for="editBonKeterangan" class="block text-sm font-semibold text-gray-700 mb-2">
               Keterangan
             </label>
-            <textarea
-              id="editBonKeterangan"
-              v-model="editedBon.keterangan"
-              rows="3"
+            <textarea id="editBonKeterangan" v-model="editedBon.keterangan" rows="3"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all duration-200 resize-none"
-              placeholder="Keterangan tambahan (opsional)"
-            ></textarea>
+              placeholder="Keterangan tambahan (opsional)"></textarea>
           </div>
 
           <div class="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              @click="closeModal"
-              class="px-6 py-2.5 text-gray-700 bg-gray-300 hover:bg-gray-200 font-medium rounded-lg transition-colors duration-200"
-            >
+            <button type="button" @click="closeModal"
+              class="px-6 py-2.5 text-gray-700 bg-gray-300 hover:bg-gray-200 font-medium rounded-lg transition-colors duration-200">
               Batal
             </button>
-            <button
-              type="submit"
-              :disabled="bonStore.loading"
-              class="px-6 py-2.5 bg-blue-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              <svg
-                v-if="bonStore.loading"
-                class="animate-spin w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
+            <button type="submit" :disabled="bonStore.loading"
+              class="px-6 py-2.5 bg-blue-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
+              <svg v-if="bonStore.loading" class="animate-spin w-4 h-4" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span v-if="bonStore.loading">Memperbarui...</span>
               <span v-else>Update Bon</span>
@@ -905,35 +745,24 @@ const closeModal = () => {
     </div>
   </div>
   <div v-if="totalPages > 1" class="flex justify-center items-center space-x-2 mt-8 pb-8">
-    <button
-      @click="goToPage(currentPage - 1)"
-      :disabled="currentPage === 1"
-      class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-    >
+    <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
+      class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
       Previous
     </button>
 
     <div class="flex space-x-1">
-      <button
-        v-for="page in Math.min(totalPages, 5)"
-        :key="page"
-        @click="goToPage(page)"
-        :class="[
-          'px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200',
-          currentPage === page
-            ? 'bg-blue-600 text-white shadow-lg'
-            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50',
-        ]"
-      >
+      <button v-for="page in Math.min(totalPages, 5)" :key="page" @click="goToPage(page)" :class="[
+        'px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200',
+        currentPage === page
+          ? 'bg-blue-600 text-white shadow-lg'
+          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50',
+      ]">
         {{ page }}
       </button>
     </div>
 
-    <button
-      @click="goToPage(currentPage + 1)"
-      :disabled="currentPage === totalPages"
-      class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-    >
+    <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
+      class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
       Next
     </button>
   </div>
@@ -959,12 +788,14 @@ const closeModal = () => {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
 * {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke,
     opacity, box-shadow, transform, filter;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;

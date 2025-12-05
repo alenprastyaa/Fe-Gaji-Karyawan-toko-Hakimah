@@ -26,6 +26,40 @@ export const useUserStore = defineStore("user", {
         this.loading = false;
       }
     },
+    async userActive() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await userService.getUserActive();
+        this.users = response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || "Gagal mengambil data user.";
+        Swal.fire({
+          icon: "error",
+          title: "Gagal!",
+          text: this.error,
+        });
+      } finally {
+        this.loading = false;
+      }
+    },
+    async fetchInactiveUsers() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await userService.getUserInActive();
+        this.users = response.data;
+      } catch (err) {
+        this.error = err.response?.data?.message || "Gagal mengambil data user.";
+        Swal.fire({
+          icon: "error",
+          title: "Gagal!",
+          text: this.error,
+        });
+      } finally {
+        this.loading = false;
+      }
+    },
     async addUser(userData) {
       this.loading = true;
       this.error = null;

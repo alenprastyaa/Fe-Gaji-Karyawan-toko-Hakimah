@@ -26,8 +26,7 @@ const bonLoading = ref(true);
 const bonError = ref(null);
 
 onMounted(async () => {
-  await userStore.userActive();
-  await fetchInactiveUsers();
+  await userStore.fetchInactiveUsers();
   fetchBonData();
 });
 
@@ -284,10 +283,10 @@ const openInactiveModal = async () => {
                       {{ formatCurrency(user.gaji) }}
                     </div>
                   </td>
-                  <td class="py-4 px-6 text-sm text-gray-900 font-semibold">
-                    <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">
-                      Aktif
-                    </span>
+                  <td class="py-4 px-6 text-sm text-red-600 font-semibold ">
+                    <div class="flex items-center">
+                      {{ (user.status) }}
+                    </div>
                   </td>
                   <td class="py-4 px-6 text-center">
                     <div class="flex items-center justify-center space-x-2">
@@ -515,7 +514,7 @@ const openInactiveModal = async () => {
           <select id="newRole" v-model="newUser.role" class="shadow border rounded w-full py-2 px-3 text-gray-700"
             required>
             <option v-for="role in roles" :key="role" :value="role">{{ role.charAt(0).toUpperCase() + role.slice(1)
-              }}
+            }}
             </option>
           </select>
         </div>
@@ -569,7 +568,7 @@ const openInactiveModal = async () => {
           <select id="editStatus" v-model="editedUser.status"
             class="shadow border rounded w-full py-2 px-3 text-gray-700" required>
             <option value="active">Active</option>
-            <option value="inactive">Tidak Aktif</option>
+            <option value="inactive">Inactive</option>
           </select>
         </div>
 
@@ -578,7 +577,7 @@ const openInactiveModal = async () => {
           <select id="editRole" v-model="editedUser.role" class="shadow border rounded w-full py-2 px-3 text-gray-700"
             required>
             <option v-for="role in roles" :key="role" :value="role">{{ role.charAt(0).toUpperCase() + role.slice(1)
-              }}
+            }}
             </option>
           </select>
         </div>

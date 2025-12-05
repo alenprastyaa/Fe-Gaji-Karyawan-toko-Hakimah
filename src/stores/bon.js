@@ -66,6 +66,24 @@ export const useBonStore = defineStore("bon", {
         this.loading = false;
       }
     },
+    async fetchBonActive(filters) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await bonService.getBonActive(filters);
+        this.allBons = response.data.bons;
+        this.totalAllBon = response.data.totalBonKeseluruhan;
+      } catch (err) {
+        this.error = err.response?.data?.message || "Gagal mengambil semua data bon.";
+        Swal.fire({
+          icon: "error",
+          title: "Gagal!",
+          text: this.error,
+        });
+      } finally {
+        this.loading = false;
+      }
+    },
     async addBon(bonData) {
       this.loading = true;
       this.error = null;
