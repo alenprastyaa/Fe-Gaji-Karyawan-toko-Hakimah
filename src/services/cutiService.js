@@ -2,7 +2,7 @@ import apiClient from "./axios";
 
 export default {
   getMyCuti(filters = {}) {
-    return apiClient.get("/cuti/my", { params: filters });
+    return apiClient.get("/cuti/my/cuti", { params: filters });
   },
 
   getMyCutiById(id) {
@@ -10,7 +10,7 @@ export default {
   },
 
   createMyCuti(cutiData) {
-    return apiClient.post("/cuti/my", cutiData);
+    return apiClient.post("/cuti/my/cuti", cutiData);
   },
   getAllCuti(filters = {}) {
     return apiClient.get("/cuti", { params: filters });
