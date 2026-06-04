@@ -77,16 +77,159 @@ const formatCurrency = (value) => {
   }).format(numValue);
 };
 
-const getDaysBetween = (startDate, endDate) => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+const normalizeDate = (dateValue) => {
+  if (dateValue instanceof Date) {
+    return new Date(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate());
+  }
 
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
+  if (typeof dateValue === "string") {
+    const dateOnlyMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (dateOnlyMatch) {
+      const [, year, month, day] = dateOnlyMatch;
+      return new Date(Number(year), Number(month) - 1, Number(day));
+    }
+  }
 
-  const diffTime = Math.abs(end.getTime() - start.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays + 1;
+  const date = new Date(dateValue);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+};
+
+const addDays = (date, days) => {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+};
+
+const getDateKey = (dateValue) => {
+  const date = normalizeDate(dateValue);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getDaysInMonth = (dateValue) => {
+  const date = normalizeDate(dateValue);
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+};
+
+const getDaysBetweenExclusive = (startDateValue, endDateValue) => {
+  const startDate = normalizeDate(startDateValue);
+  const endDate = normalizeDate(endDateValue);
+  const diffTime = endDate.getTime() - startDate.getTime();
+  return Math.max(0, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+};
+
+const addCalendarMonths = (dateValue, monthCount) => {
+  const date = normalizeDate(dateValue);
+  const targetMonthIndex = date.getMonth() + monthCount;
+  const targetYear = date.getFullYear() + Math.floor(targetMonthIndex / 12);
+  const targetMonth = ((targetMonthIndex % 12) + 12) % 12;
+  const targetDay = Math.min(
+    date.getDate(),
+    new Date(targetYear, targetMonth + 1, 0).getDate()
+  );
+
+  return new Date(targetYear, targetMonth, targetDay);
+};
+
+const getDailySalary = (dateValue, monthlySalary) => {
+  return monthlySalary / getDaysInMonth(dateValue);
+};
+
+const sumDailySalary = (startDateValue, endDateValue, monthlySalary) => {
+  let totalSalary = 0;
+
+  for (
+    let currentDate = normalizeDate(startDateValue);
+    currentDate < normalizeDate(endDateValue);
+    currentDate = addDays(currentDate, 1)
+  ) {
+    totalSalary += getDailySalary(currentDate, monthlySalary);
+  }
+
+  return totalSalary;
+};
+
+const formatPeriodLabel = (monthCount, dayCount) => {
+  const parts = [];
+
+  if (monthCount > 0) {
+    parts.push(`${monthCount} bulan`);
+  }
+
+  if (dayCount > 0) {
+    parts.push(`${dayCount} hari`);
+  }
+
+  return parts.length ? parts.join(" ") : "0 hari";
+};
+
+const calculateCalendarSalary = (startDateValue, endDateValue, monthlySalary, unpaidLeaveDateKeys) => {
+  const startDate = normalizeDate(startDateValue);
+  const endDate = normalizeDate(endDateValue);
+
+  if (!startDateValue || startDate > endDate || isNaN(monthlySalary)) {
+    return {
+      daysWorked: 0,
+      effectiveDaysWorked: 0,
+      totalApprovedUnpaidLeaveDays: 0,
+      gajiPerHari: 0,
+      gajiProRata: 0,
+      periodMonths: 0,
+      periodRemainingDays: 0,
+      periodLabel: "0 hari",
+    };
+  }
+
+  const endDateExclusive = addDays(endDate, 1);
+  let periodMonths = 0;
+
+  while (addCalendarMonths(startDate, periodMonths + 1) <= endDateExclusive) {
+    periodMonths += 1;
+  }
+
+  const remainingStartDate = addCalendarMonths(startDate, periodMonths);
+  const periodRemainingDays = getDaysBetweenExclusive(remainingStartDate, endDateExclusive);
+  const daysWorked = getDaysBetweenExclusive(startDate, endDateExclusive);
+  const baseSalary =
+    monthlySalary * periodMonths +
+    sumDailySalary(remainingStartDate, endDateExclusive, monthlySalary);
+
+  let totalApprovedUnpaidLeaveDays = 0;
+  let unpaidLeaveDeduction = 0;
+
+  for (
+    let currentDate = new Date(startDate);
+    currentDate < endDateExclusive;
+    currentDate = addDays(currentDate, 1)
+  ) {
+    if (unpaidLeaveDateKeys.has(getDateKey(currentDate))) {
+      totalApprovedUnpaidLeaveDays += 1;
+      unpaidLeaveDeduction += getDailySalary(currentDate, monthlySalary);
+    }
+  }
+
+  const effectiveDaysWorked = Math.max(0, daysWorked - totalApprovedUnpaidLeaveDays);
+  const remainingDailySalary = sumDailySalary(
+    remainingStartDate,
+    endDateExclusive,
+    monthlySalary
+  );
+
+  return {
+    daysWorked,
+    effectiveDaysWorked,
+    totalApprovedUnpaidLeaveDays,
+    gajiPerHari:
+      periodRemainingDays > 0
+        ? roundToTwo(remainingDailySalary / periodRemainingDays)
+        : roundToTwo(getDailySalary(endDate, monthlySalary)),
+    gajiProRata: roundToTwo(baseSalary - unpaidLeaveDeduction),
+    periodMonths,
+    periodRemainingDays,
+    periodLabel: formatPeriodLabel(periodMonths, periodRemainingDays),
+  };
 };
 
 const employeeSalarySummary = computed(() => {
@@ -106,6 +249,9 @@ const employeeSalarySummary = computed(() => {
         totalApprovedUnpaidLeaveDays: 0,
         effectiveDaysWorked: 0,
         gajiProRata: 0,
+        periodMonths: 0,
+        periodRemainingDays: 0,
+        periodLabel: "0 hari",
         sisaGaji: 0,
         isInactive: true,
       };
@@ -120,62 +266,49 @@ const employeeSalarySummary = computed(() => {
     totalBon = roundToTwo(totalBon);
 
     const gajiBulanan = parseFloat(user.gaji);
-    const gajiPerHari = roundToTwo(gajiBulanan / 28);
 
     const tanggalMasuk = user.tanggalMasukKerja;
-    let daysWorked = 0;
+    const unpaidLeaveDateKeys = new Set();
 
-    if (tanggalMasuk) {
-      const startDate = new Date(tanggalMasuk);
-      startDate.setHours(0, 0, 0, 0);
-      const todayNormalized = new Date(today.value);
-      todayNormalized.setHours(0, 0, 0, 0);
-
-      if (startDate <= todayNormalized) {
-        daysWorked = getDaysBetween(startDate, todayNormalized);
-      }
-    }
-
-    let totalApprovedUnpaidLeaveDays = 0;
-
-    // PERBAIKAN: Hitung cuti akumulatif dari awal bekerja
     cutiStore.allCuti.forEach((cuti) => {
-      if (cuti.userId === user.id && cuti.disetujui) {
-        const cutiStart = new Date(cuti.tanggalMulai);
-        const cutiEnd = new Date(cuti.tanggalSelesai);
+      if (cuti.userId !== user.id || !cuti.disetujui || !tanggalMasuk) return;
 
-        cutiStart.setHours(0, 0, 0, 0);
-        cutiEnd.setHours(0, 0, 0, 0);
+      const cutiStart = normalizeDate(cuti.tanggalMulai);
+      const cutiEnd = normalizeDate(cuti.tanggalSelesai);
+      const workStartDate = normalizeDate(tanggalMasuk);
+      const todayNormalized = normalizeDate(today.value);
 
-        // Menghitung dari tanggal masuk kerja hingga hari ini (BUKAN per bulan)
-        const workStartDate = new Date(tanggalMasuk);
-        workStartDate.setHours(0, 0, 0, 0);
-        const todayNormalized = new Date(today.value);
-        todayNormalized.setHours(0, 0, 0, 0);
+      const overlapStart = new Date(Math.max(cutiStart.getTime(), workStartDate.getTime()));
+      const overlapEnd = new Date(Math.min(cutiEnd.getTime(), todayNormalized.getTime()));
 
-        // Hitung overlap antara periode cuti dengan periode kerja
-        const overlapStart = new Date(Math.max(cutiStart.getTime(), workStartDate.getTime()));
-        const overlapEnd = new Date(Math.min(cutiEnd.getTime(), todayNormalized.getTime()));
-
-        if (overlapStart <= overlapEnd) {
-          const days = getDaysBetween(overlapStart, overlapEnd);
-          totalApprovedUnpaidLeaveDays += days;
-        }
+      for (
+        let currentDate = new Date(overlapStart);
+        currentDate <= overlapEnd;
+        currentDate = addDays(currentDate, 1)
+      ) {
+        unpaidLeaveDateKeys.add(getDateKey(currentDate));
       }
     });
 
-    const effectiveDaysWorked = Math.max(0, daysWorked - totalApprovedUnpaidLeaveDays);
-    const gajiProRata = roundToTwo(gajiPerHari * effectiveDaysWorked);
-    const sisaGaji = roundToTwo(gajiProRata - totalBon);
+    const salaryCalculation = calculateCalendarSalary(
+      tanggalMasuk,
+      today.value,
+      gajiBulanan,
+      unpaidLeaveDateKeys
+    );
+    const sisaGaji = roundToTwo(salaryCalculation.gajiProRata - totalBon);
 
     return {
       ...user,
       totalBon: roundToTwo(totalBon),
-      gajiPerHari: roundToTwo(gajiPerHari),
-      daysWorked,
-      totalApprovedUnpaidLeaveDays,
-      effectiveDaysWorked,
-      gajiProRata: roundToTwo(gajiProRata),
+      gajiPerHari: salaryCalculation.gajiPerHari,
+      daysWorked: salaryCalculation.daysWorked,
+      totalApprovedUnpaidLeaveDays: salaryCalculation.totalApprovedUnpaidLeaveDays,
+      effectiveDaysWorked: salaryCalculation.effectiveDaysWorked,
+      gajiProRata: salaryCalculation.gajiProRata,
+      periodMonths: salaryCalculation.periodMonths,
+      periodRemainingDays: salaryCalculation.periodRemainingDays,
+      periodLabel: salaryCalculation.periodLabel,
       sisaGaji: roundToTwo(sisaGaji),
       isInactive: false,
     };
@@ -616,7 +749,7 @@ const downloadSalaryPdf = (summary) => {
     alternateRowBg: [255, 255, 255],
   });
 
-  y += 20;
+  y += 14;
 
   // Salary Details Section with Table
   doc.setFontSize(12);
@@ -626,10 +759,12 @@ const downloadSalaryPdf = (summary) => {
 
   const salaryData = [
     ["Gaji Bulanan", formatCurrency(summary.gaji)],
-    ["Gaji per Hari (28 hari/bulan)", formatCurrency(summary.gajiPerHari)],
-    ["Total Hari Kerja (s/d hari ini)", `${summary.daysWorked} hari`],
+    ["Periode Kalender", summary.periodLabel],
+    ["Rata-rata Harian Kalender", formatCurrency(summary.gajiPerHari)],
+    ["Dasar Hitung", "Bulan penuh + sisa hari kalender"],
+    ["Total Hari Kalender (s/d hari ini)", `${summary.daysWorked} hari`],
     ["Hari Cuti Tidak Dibayar", `${summary.totalApprovedUnpaidLeaveDays} hari`],
-    ["Hari Kerja Efektif", `${summary.effectiveDaysWorked} hari`],
+    ["Hari Dibayar Efektif", `${summary.effectiveDaysWorked} hari`],
   ];
 
   y = drawTable(salaryData, y, {
@@ -641,13 +776,13 @@ const downloadSalaryPdf = (summary) => {
     alternateRowBg: [255, 255, 255],
   });
 
-  y += 20;
+  y += 14;
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.text("RINGKASAN PERHITUNGAN", margin, y);
   y += 5;
   const summaryData = [
-    ["Gaji Pro-Rata (s/d hari ini)", formatCurrency(summary.gajiProRata)],
+    ["Gaji Terhitung Kalender (s/d hari ini)", formatCurrency(summary.gajiProRata)],
     ["Total Bon", formatCurrency(summary.totalBon)],
   ];
 
@@ -692,7 +827,7 @@ const downloadSalaryPdf = (summary) => {
     summary.sisaGaji >= 0 ? "✅ Status: Gaji masih tersisa" : " Status: Bon melebihi gaji & ANDA HARUS MEBAYAR SEBESAR MINUS DIATAS";
   doc.text(statusText, margin, y);
 
-  y += 20;
+  y += 12;
 
   // Footer Section with professional styling
   doc.setDrawColor(41, 128, 185);
@@ -717,10 +852,11 @@ const downloadSalaryPdf = (summary) => {
 
   y += 8;
   doc.setFont("helvetica", "italic");
-  doc.text("* Perhitungan berdasarkan asumsi 28 hari kerja per bulan", margin, y);
+  doc.text("* Perhitungan mengikuti jumlah hari kalender tiap bulan (28/29/30/31 hari)", margin, y);
 
   // Digital signature area
-  y += 15;
+  y += 10;
+  y = Math.min(y, pageHeight - 15);
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.5);
   doc.line(pageWidth - margin - 80, y, pageWidth - margin, y);
@@ -812,7 +948,7 @@ const downloadSalaryPdf = (summary) => {
               <div class="text-sm text-blue-600 font-medium">Total Karyawan</div>
             </div>
 
-            <!-- Total Gaji Pro-Rata -->
+            <!-- Total Gaji Terhitung -->
             <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-5 border border-green-200">
               <div class="flex items-center justify-between mb-3">
                 <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
@@ -1110,11 +1246,11 @@ const downloadSalaryPdf = (summary) => {
                   {{ formatCurrency(summary.gaji) }}
                 </div>
                 <div class="text-gray-500 text-xs">
-                  {{ formatCurrency(summary.gajiPerHari) }}/hari
+                  rata-rata {{ formatCurrency(summary.gajiPerHari) }}/hari
                 </div>
               </div>
 
-              <!-- Hari Kerja -->
+              <!-- Periode Kalender -->
               <div class="bg-gray-50 p-3 rounded-lg">
                 <div class="flex items-center text-gray-500 mb-1">
                   <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -1122,12 +1258,14 @@ const downloadSalaryPdf = (summary) => {
                       d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
                       clip-rule="evenodd" />
                   </svg>
-                  Hari Kerja
+                  Periode Kalender
                 </div>
                 <div class="font-semibold text-green-700 text-sm">
-                  {{ summary.effectiveDaysWorked }} hari
+                  {{ summary.periodLabel }}
                 </div>
-                <div class="text-gray-500 text-xs">dari {{ summary.daysWorked }}</div>
+                <div class="text-gray-500 text-xs">
+                  {{ summary.effectiveDaysWorked }} hari dibayar
+                </div>
               </div>
 
               <!-- Hari Cuti -->
@@ -1145,7 +1283,7 @@ const downloadSalaryPdf = (summary) => {
                 </div>
               </div>
 
-              <!-- Gaji Pro-Rata -->
+              <!-- Gaji Terhitung Kalender -->
               <div class="bg-gray-50 p-3 rounded-lg">
                 <div class="flex items-center text-gray-500 mb-1">
                   <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -1153,7 +1291,7 @@ const downloadSalaryPdf = (summary) => {
                       d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
                       clip-rule="evenodd" />
                   </svg>
-                  Gaji Pro-Rata
+                  Gaji Kalender
                 </div>
                 <div class="font-semibold text-gray-900 text-sm">
                   {{ formatCurrency(summary.gajiProRata) }}
@@ -1241,7 +1379,7 @@ const downloadSalaryPdf = (summary) => {
                         d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
                         clip-rule="evenodd" />
                     </svg>
-                    Hari Kerja
+                    Periode Kalender
                   </div>
                 </th>
                 <th
@@ -1263,7 +1401,7 @@ const downloadSalaryPdf = (summary) => {
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
                         clip-rule="evenodd" />
                     </svg>
-                    Gaji Pro-Rata
+                    Gaji Kalender
                   </div>
                 </th>
                 <th
@@ -1332,16 +1470,18 @@ const downloadSalaryPdf = (summary) => {
                     {{ formatCurrency(summary.gaji) }}
                   </div>
                   <div class="text-xs text-gray-500">
-                    {{ formatCurrency(summary.gajiPerHari) }}/hari
+                    rata-rata {{ formatCurrency(summary.gajiPerHari) }}/hari
                   </div>
                 </td>
                 <td class="py-4 px-4 text-center border-r border-gray-200">
                   <div class="inline-flex flex-col items-center">
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {{ summary.effectiveDaysWorked }} hari
+                      {{ summary.periodLabel }}
                     </span>
-                    <span class="text-xs text-gray-500 mt-1">dari {{ summary.daysWorked }}</span>
+                    <span class="text-xs text-gray-500 mt-1">
+                      {{ summary.effectiveDaysWorked }} hari dibayar
+                    </span>
                   </div>
                 </td>
                 <td class="py-4 px-4 text-center border-r border-gray-200">

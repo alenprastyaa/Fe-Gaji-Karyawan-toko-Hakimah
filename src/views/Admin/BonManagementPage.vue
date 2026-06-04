@@ -19,6 +19,8 @@ const userStore = useUserStore();
 
 const showAddBonModal = ref(false);
 const showEditBonModal = ref(false);
+const showDetailModal = ref(false);
+const selectedEmployeeName = ref(null);
 const searchTerm = ref("");
 
 const currentPage = ref(1);
@@ -258,6 +260,10 @@ const handleDeleteBon = async (id, namaKaryawan, jumlahBon) => {
         confirmButtonColor: "#3B82F6",
         timer: 2000,
       });
+      // Close detail modal if the employee no longer has any bon left
+      if (showDetailModal.value && !selectedGroup.value) {
+        closeDetailModal();
+      }
       // After deleting, re-evaluate total pages and adjust current page if needed
       if (currentPage.value > totalPages.value && totalPages.value > 0) {
         currentPage.value = totalPages.value;
@@ -279,330 +285,259 @@ const closeModal = () => {
     keterangan: "",
   };
 };
+
+// --- Detail Modal (per karyawan) ---
+const selectedGroup = computed(
+  () =>
+    groupedBons.value.find((group) => group.employeeName === selectedEmployeeName.value) || null
+);
+
+const openDetailModal = (employeeName) => {
+  selectedEmployeeName.value = employeeName;
+  showDetailModal.value = true;
+};
+
+const closeDetailModal = () => {
+  showDetailModal.value = false;
+  selectedEmployeeName.value = null;
+};
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <div class="max-w-full mx-auto p-4">
-      <div class="mb-8">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-4xl font-bold text-gray-900 mb-2">Manajemen Bon Karyawan</h1>
-            <p class="text-gray-600 text-lg">Kelola dan pantau data bon karyawan dengan mudah</p>
+  <div class="min-h-screen bg-slate-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <!-- Page header -->
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between mb-6">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600 mb-1">
+            Administrasi
+          </p>
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Manajemen Bon Karyawan
+          </h1>
+          <p class="text-slate-500 mt-1 text-sm sm:text-base">
+            Pantau, kelola, dan rekapitulasi pinjaman karyawan secara real-time.
+          </p>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
+          <div class="w-11 h-11 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.8"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           </div>
-          <div class="hidden md:flex items-center space-x-4">
-            <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100">
-              <div class="text-sm text-gray-500 font-medium">Total Bon</div>
-              <div class="text-2xl font-bold text-gray-900">{{ totalBons }}</div>
-            </div>
-            <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100">
-              <div class="text-sm text-gray-500 font-medium">Total Nilai</div>
-              <div class="text-2xl font-bold text-blue-600">{{ formatCurrency(totalAmount) }}</div>
-            </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Bon</div>
+            <div class="text-2xl font-bold text-slate-900 leading-tight">{{ totalBons }}</div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
+          <div class="w-11 h-11 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.8"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Nilai</div>
+            <div class="text-2xl font-bold text-emerald-600 leading-tight">{{ formatCurrency(totalAmount) }}</div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
+          <div class="w-11 h-11 rounded-lg bg-sky-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-sky-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4 0m4 0a4 4 0 014 4M7 9a4 4 0 118 0 4 4 0 01-8 0z" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">Karyawan</div>
+            <div class="text-2xl font-bold text-slate-900 leading-tight">{{ groupedBons.length }}</div>
           </div>
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-        <div class="px-6 py-5">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex items-center space-x-4">
-              <div class="relative">
-                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none"
-                  stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input v-model="searchTerm" type="text" placeholder="Cari karyawan atau keterangan..."
-                  class="shadow-lg pl-10 pr-4 py-2.5 w-64 rounded-lg border border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200" />
-              </div>
-            </div>
-
-            <!-- <button
-              @click="showAddBonModal = true"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center space-x-2"
-            >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                ></path>
-              </svg>
-              <span>Tambah Bon</span>
-            </button> -->
-          </div>
-        </div>
-
-        <div v-if="bonStore.loading || userStore.loading" class="flex items-center justify-center py-16">
-          <div class="text-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4">
-            </div>
-            <p class="text-gray-600 font-medium">Memuat data bon...</p>
-          </div>
-        </div>
-
-        <div v-else-if="bonStore.error || userStore.error"
-          class="mx-6 my-6 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl">
-          <div class="flex items-center">
-            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- Toolbar -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm px-4 sm:px-5 py-4 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="relative w-full sm:max-w-sm">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <div>
-              <strong class="font-semibold">Terjadi Kesalahan!</strong>
-              <p class="mt-1">{{ bonStore.error || userStore.error }}</p>
-            </div>
+            <input v-model="searchTerm" type="text" placeholder="Cari karyawan atau keperluan..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-sm text-slate-800 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" />
+          </div>
+          <div class="text-sm text-slate-500 sm:text-right">
+            <span class="font-semibold text-slate-700">{{ totalBons }}</span> bon dari
+            <span class="font-semibold text-slate-700">{{ groupedBons.length }}</span> karyawan
           </div>
         </div>
-        <div v-if="paginatedGroups.length > 0" class="">
-          <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-            <!-- Header Table -->
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-              <h2 class="text-xl font-bold text-white">Data Bon Karyawan</h2>
-            </div>
+      </div>
 
-            <!-- Desktop/Tablet Table View -->
-            <div class="hidden md:block overflow-x-auto">
-              <table class="w-full">
-                <!-- Table Header -->
-                <thead class="bg-gray-200 border-b border-gray-200">
-                  <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Karyawan
-                    </th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Tanggal
-                    </th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Keperluan
-                    </th>
-                    <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Jumlah
-                    </th>
-                    <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Aksi
-                    </th>
-                  </tr>
-                </thead>
+      <!-- Loading state -->
+      <div v-if="bonStore.loading || userStore.loading"
+        class="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center justify-center py-20">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-11 w-11 border-4 border-indigo-600 border-t-transparent mx-auto mb-4">
+          </div>
+          <p class="text-slate-500 font-medium text-sm">Memuat data bon...</p>
+        </div>
+      </div>
 
-                <!-- Table Body -->
-                <tbody class="bg-white">
-                  <template v-for="group in paginatedGroups" :key="group.employeeName">
-                    <!-- Employee Group Header Row -->
-                    <tr
-                      class="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 border-t-2 border-t-gray-300">
-                      <td class="px-6 py-4" colspan="5">
-                        <div class="flex items-center justify-between">
-                          <div class="flex items-center space-x-3">
-                            <!-- Avatar -->
-                            <div
-                              class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md">
-                              <span class="text-white font-bold text-sm">
-                                {{ group.employeeName.charAt(0).toUpperCase() }}
-                              </span>
-                            </div>
-                            <div>
-                              <h3 class="font-bold text-gray-900 text-lg">
-                                {{ group.employeeName }}
-                              </h3>
-                              <span
-                                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                                {{ group.totalCount }} bon
-                              </span>
-                            </div>
-                          </div>
-                          <div class="text-right">
-                            <div class="text-xl font-bold text-gray-900">
-                              {{ formatCurrency(group.totalAmount) }}
-                            </div>
-                            <div class="text-gray-500 text-sm">Total</div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
+      <!-- Error state -->
+      <div v-else-if="bonStore.error || userStore.error"
+        class="bg-rose-50 border border-rose-200 text-rose-700 px-5 py-4 rounded-xl flex items-start gap-3">
+        <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+          <strong class="font-semibold">Terjadi Kesalahan</strong>
+          <p class="mt-0.5 text-sm">{{ bonStore.error || userStore.error }}</p>
+        </div>
+      </div>
 
-                    <!-- Employee's Bon Records -->
-                    <tr v-for="bon in group.bons.sort(
-                      (a, b) => new Date(b.tanggal) - new Date(a.tanggal)
-                    )" :key="bon.id" class="hover:bg-gray-50 transition-colors duration-200 border-b border-gray-100">
-                      <!-- Employee Name (Empty for grouped records) -->
-                      <td class="px-6 py-4">
-                        <div class="w-8 h-0.5 bg-gray-300 ml-4"></div>
-                      </td>
+      <!-- Empty state -->
+      <div v-else-if="paginatedGroups.length === 0"
+        class="bg-white rounded-xl border border-dashed border-slate-300 shadow-sm py-16 px-6 text-center">
+        <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <h3 class="text-base font-semibold text-slate-800">Tidak ada data bon</h3>
+        <p class="text-sm text-slate-500 mt-1">
+          {{ searchTerm ? 'Tidak ada hasil untuk pencarian Anda.' : 'Belum ada bon karyawan yang tercatat.' }}
+        </p>
+      </div>
 
-                      <!-- Date -->
-                      <td class="px-6 py-4">
-                        <div class="flex items-center space-x-2">
-                          <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span class="text-sm font-medium text-gray-700">
-                            {{ formatDate(bon.tanggal) }}
-                          </span>
-                        </div>
-                      </td>
+      <!-- Data: employee summary list -->
+      <div v-else
+        class="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100 overflow-hidden">
+        <button v-for="group in paginatedGroups" :key="group.employeeName" type="button"
+          @click="openDetailModal(group.employeeName)"
+          class="w-full flex items-center gap-4 px-4 sm:px-5 py-4 text-left hover:bg-slate-50 transition-colors group">
+          <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shadow-sm flex-shrink-0">
+            <span class="text-white font-semibold text-sm">
+              {{ group.employeeName.charAt(0).toUpperCase() }}
+            </span>
+          </div>
 
-                      <!-- Purpose -->
-                      <td class="px-6 py-4">
-                        <div class="max-w-xs">
-                          <div v-if="bon.keperluan" class="text-sm text-gray-800">
-                            {{ bon.keperluan }}
-                          </div>
-                          <div v-else class="text-sm text-gray-400 italic">
-                            Tidak ada keterangan
-                          </div>
-                        </div>
-                      </td>
+          <div class="min-w-0 flex-1">
+            <h3 class="font-semibold text-slate-900 truncate">{{ group.employeeName }}</h3>
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+              {{ group.totalCount }} bon
+            </span>
+          </div>
 
-                      <!-- Amount -->
-                      <td class="px-6 py-4 text-right">
-                        <span
-                          class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-800">
-                          {{ formatCurrency(bon.jumlahBon) }}
-                        </span>
-                      </td>
+          <div class="text-right flex-shrink-0">
+            <div class="text-xs text-slate-400 uppercase tracking-wide">Total Bon</div>
+            <div class="text-base sm:text-lg font-bold text-slate-900">{{ formatCurrency(group.totalAmount) }}</div>
+          </div>
 
-                      <!-- Actions -->
-                      <td class="px-6 py-4">
-                        <div class="flex items-center justify-center space-x-2">
-                          <button @click="handleDeleteBon(bon.id, group.employeeName, bon.jumlahBon)"
-                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold shadow hover:shadow-md transform hover:scale-105 transition-all duration-200 flex items-center space-x-1">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            <span>Hapus</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+          <svg class="w-5 h-5 text-slate-300 group-hover:text-indigo-500 flex-shrink-0 transition-colors" fill="none"
+            stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
 
-                    <!-- Spacer row between employees -->
-                    <tr class="bg-gray-100 h-2">
-                      <td colspan="5" class="border-t-2 border-gray-300"></td>
-                    </tr>
-                  </template>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Mobile Card View -->
-            <div class="md:hidden">
-              <div class="space-y-6 p-4">
-                <template v-for="group in paginatedGroups" :key="group.employeeName">
-                  <!-- Employee Group Header Card -->
-                  <div
-                    class="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm">
-                    <div class="flex items-center justify-between mb-3">
-                      <div class="flex items-center space-x-3">
-                        <!-- Avatar -->
-                        <div
-                          class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md">
-                          <span class="text-white font-bold text-lg">
-                            {{ group.employeeName.charAt(0).toUpperCase() }}
-                          </span>
-                        </div>
-                        <div>
-                          <h3 class="font-bold text-gray-900 text-lg">
-                            {{ group.employeeName }}
-                          </h3>
-                          <span
-                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                            {{ group.totalCount }} bon
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Total Amount -->
-                    <div class="bg-white rounded-lg p-3 border border-blue-200">
-                      <div class="flex items-center justify-between">
-                        <span class="text-sm font-medium text-gray-600">Total Bon:</span>
-                        <div class="text-right">
-                          <div class="text-xl font-bold text-gray-900">
-                            {{ formatCurrency(group.totalAmount) }}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Employee's Bon Records Cards -->
-                  <div class="space-y-3 ml-4">
-                    <div v-for="bon in group.bons.sort(
-                      (a, b) => new Date(b.tanggal) - new Date(a.tanggal)
-                    )" :key="bon.id"
-                      class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
-                      <!-- Bon Item Header -->
-                      <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                          <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span class="text-sm font-medium text-gray-700">
-                            {{ formatDate(bon.tanggal) }}
-                          </span>
-                        </div>
-                        <span
-                          class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-green-100 text-green-800">
-                          {{ formatCurrency(bon.jumlahBon) }}
-                        </span>
-                      </div>
-
-                      <!-- Keperluan -->
-                      <div class="mb-4">
-                        <div class="text-xs font-medium text-gray-500 mb-1">Keperluan:</div>
-                        <div v-if="bon.keperluan" class="text-sm text-gray-800 bg-gray-50 p-2 rounded">
-                          {{ bon.keperluan }}
-                        </div>
-                        <div v-else class="text-sm text-gray-400 italic bg-gray-50 p-2 rounded">
-                          Tidak ada keterangan
-                        </div>
-                      </div>
-
-                      <!-- Action Button -->
-                      <div class="flex justify-end">
-                        <button @click="handleDeleteBon(bon.id, group.employeeName, bon.jumlahBon)"
-                          class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-semibold shadow hover:shadow-md transition-all duration-200 flex items-center space-x-2">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          <span>Hapus</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Divider between employees -->
-                  <div class="h-4 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-                </template>
+    <!-- Detail Modal: bon per karyawan -->
+    <Teleport to="body">
+      <div v-if="showDetailModal && selectedGroup"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto"
+        @click.self="closeDetailModal">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[75vh] my-auto overflow-y-auto">
+          <!-- Modal header -->
+          <div class="bg-indigo-600 px-5 sm:px-6 py-4 rounded-t-2xl flex items-center justify-between">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                <span class="text-white font-semibold">
+                  {{ selectedGroup.employeeName.charAt(0).toUpperCase() }}
+                </span>
+              </div>
+              <div class="min-w-0">
+                <h2 class="text-lg font-semibold text-white truncate">{{ selectedGroup.employeeName }}</h2>
+                <p class="text-indigo-100 text-xs">{{ selectedGroup.totalCount }} bon tercatat</p>
               </div>
             </div>
+            <button @click="closeDetailModal" class="text-white hover:text-white transition-colors flex-shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-            <!-- Table Footer -->
-            <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
-              <div class="flex items-center justify-between text-sm text-gray-600">
-                <div>Menampilkan data bon karyawan</div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>Data terbaru</span>
+          <!-- Total summary -->
+          <div class="px-5 sm:px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <span class="text-sm font-medium text-slate-500">Total Bon</span>
+            <span class="text-xl font-bold text-emerald-600">{{ formatCurrency(selectedGroup.totalAmount) }}</span>
+          </div>
+
+          <!-- Bon list -->
+          <div class="divide-y divide-slate-100">
+            <div v-for="bon in selectedGroup.bons.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal))"
+              :key="bon.id" class="px-5 sm:px-6 py-4 hover:bg-slate-50 transition-colors">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+                      viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span class="text-sm font-medium text-slate-700">{{ formatDate(bon.tanggal) }}</span>
+                  </div>
+                  <p v-if="bon.keperluan" class="text-sm text-slate-600">{{ bon.keperluan }}</p>
+                  <p v-else class="text-sm text-slate-400 italic">Tidak ada keterangan</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <div class="text-sm font-bold text-slate-900 mb-2 whitespace-nowrap">
+                    {{ formatCurrency(bon.jumlahBon) }}
+                  </div>
+                  <button @click="handleDeleteBon(bon.id, selectedGroup.employeeName, bon.jumlahBon)"
+                    class="inline-flex items-center gap-1.5 text-rose-600 hover:text-white hover:bg-red-600 border border-rose-200 hover:border-rose-600 px-3 py-1.5 rounded-md text-xs font-medium transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Hapus
+                  </button>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Modal footer -->
+          <div class="px-5 sm:px-6 py-3 border-t border-slate-100 flex justify-end">
+            <button @click="closeDetailModal"
+              class="px-5 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
-    <div v-if="showAddBonModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    <div v-if="showAddBonModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto"
       @click.self="closeModal">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-200">
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 rounded-t-2xl">
+      <div
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[75vh] my-auto overflow-y-auto transform transition-all duration-200">
+        <div class="bg-indigo-600 px-6 py-4 rounded-t-2xl">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-white">Tambah Bon Baru</h2>
             <button @click="closeModal" class="text-white hover:text-gray-200 transition-colors duration-150">
@@ -615,11 +550,11 @@ const closeModal = () => {
 
         <form @submit.prevent="handleAddBon" class="p-6 space-y-5">
           <div>
-            <label for="bonUser" class="block text-sm font-semibold text-gray-700 mb-2">
+            <label for="bonUser" class="block text-sm font-semibold text-slate-700 mb-2">
               Karyawan *
             </label>
             <select id="bonUser" v-model="newBon.userId"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all duration-200"
               required>
               <option value="" disabled>Pilih Karyawan</option>
               <option v-for="user in userStore.users" :key="user.id" :value="user.id">
@@ -629,39 +564,39 @@ const closeModal = () => {
           </div>
 
           <div>
-            <label for="newBonTanggal" class="block text-sm font-semibold text-gray-700 mb-2">
+            <label for="newBonTanggal" class="block text-sm font-semibold text-slate-700 mb-2">
               Tanggal Bon *
             </label>
             <input type="date" id="newBonTanggal" v-model="newBon.tanggalBon"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all duration-200"
               required />
           </div>
 
           <div>
-            <label for="newBonJumlah" class="block text-sm font-semibold text-gray-700 mb-2">
+            <label for="newBonJumlah" class="block text-sm font-semibold text-slate-700 mb-2">
               Jumlah Bon (IDR) *
             </label>
             <input type="number" id="newBonJumlah" v-model.number="newBon.jumlahBon"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all duration-200"
               required min="1" placeholder="0" />
           </div>
 
           <div>
-            <label for="newBonKeterangan" class="block text-sm font-semibold text-gray-700 mb-2">
+            <label for="newBonKeterangan" class="block text-sm font-semibold text-slate-700 mb-2">
               Keterangan
             </label>
             <textarea id="newBonKeterangan" v-model="newBon.keterangan" rows="3"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 resize-none"
+              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all duration-200 resize-none"
               placeholder="Keterangan tambahan (opsional)"></textarea>
           </div>
 
           <div class="flex justify-end space-x-3 pt-4">
             <button type="button" @click="closeModal"
-              class="px-6 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium rounded-lg transition-colors duration-200">
+              class="px-6 py-2.5 text-slate-700 bg-slate-100 hover:bg-slate-200 font-medium rounded-lg transition-colors duration-200">
               Batal
             </button>
             <button type="submit" :disabled="bonStore.loading"
-              class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
+              class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
               <svg v-if="bonStore.loading" class="animate-spin w-4 h-4" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -676,9 +611,11 @@ const closeModal = () => {
     </div>
 
     <div v-if="showEditBonModal && editedBon"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" @click.self="closeModal">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-200">
-        <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4 rounded-t-2xl">
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto"
+      @click.self="closeModal">
+      <div
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[75vh] my-auto overflow-y-auto transform transition-all duration-200">
+        <div class="bg-indigo-600 px-6 py-4 rounded-t-2xl">
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-white">Edit Bon</h2>
             <button @click="closeModal" class="text-white hover:text-gray-200 transition-colors duration-150">
@@ -691,46 +628,46 @@ const closeModal = () => {
 
         <form @submit.prevent="handleUpdateBon" class="p-6 space-y-5">
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Karyawan</label>
-            <div class="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
-              <p class="text-gray-800 font-medium">{{ editedBon.karyawan || "N/A" }}</p>
+            <label class="block text-sm font-semibold text-slate-700 mb-2">Karyawan</label>
+            <div class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <p class="text-slate-800 font-medium">{{ editedBon.karyawan || "N/A" }}</p>
             </div>
           </div>
 
           <div>
-            <label for="editBonTanggal" class="block text-sm font-semibold text-gray-700 mb-2">
+            <label for="editBonTanggal" class="block text-sm font-semibold text-slate-700 mb-2">
               Tanggal Bon *
             </label>
             <input type="date" id="editBonTanggal" v-model="editedBon.tanggalBon"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all duration-200"
+              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all duration-200"
               required />
           </div>
 
           <div>
-            <label for="editBonJumlah" class="block text-sm font-semibold text-gray-700 mb-2">
+            <label for="editBonJumlah" class="block text-sm font-semibold text-slate-700 mb-2">
               Jumlah Bon (IDR) *
             </label>
             <input type="number" id="editBonJumlah" v-model.number="editedBon.jumlahBon"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all duration-200"
+              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all duration-200"
               required min="1" />
           </div>
 
           <div>
-            <label for="editBonKeterangan" class="block text-sm font-semibold text-gray-700 mb-2">
+            <label for="editBonKeterangan" class="block text-sm font-semibold text-slate-700 mb-2">
               Keterangan
             </label>
             <textarea id="editBonKeterangan" v-model="editedBon.keterangan" rows="3"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all duration-200 resize-none"
+              class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all duration-200 resize-none"
               placeholder="Keterangan tambahan (opsional)"></textarea>
           </div>
 
           <div class="flex justify-end space-x-3 pt-4">
             <button type="button" @click="closeModal"
-              class="px-6 py-2.5 text-gray-700 bg-gray-300 hover:bg-gray-200 font-medium rounded-lg transition-colors duration-200">
+              class="px-6 py-2.5 text-slate-700 bg-slate-100 hover:bg-slate-200 font-medium rounded-lg transition-colors duration-200">
               Batal
             </button>
             <button type="submit" :disabled="bonStore.loading"
-              class="px-6 py-2.5 bg-blue-500 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
+              class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
               <svg v-if="bonStore.loading" class="animate-spin w-4 h-4" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -744,26 +681,26 @@ const closeModal = () => {
       </div>
     </div>
   </div>
-  <div v-if="totalPages > 1" class="flex justify-center items-center space-x-2 mt-8 pb-8">
+  <div v-if="totalPages > 1" class="flex justify-center items-center gap-1.5 mt-2 pb-10">
     <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
-      class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
-      Previous
+      class="px-3.5 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+      Sebelumnya
     </button>
 
-    <div class="flex space-x-1">
+    <div class="flex gap-1">
       <button v-for="page in Math.min(totalPages, 5)" :key="page" @click="goToPage(page)" :class="[
-        'px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200',
+        'w-9 h-9 text-sm font-medium rounded-lg transition-colors',
         currentPage === page
-          ? 'bg-blue-600 text-white shadow-lg'
-          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50',
+          ? 'bg-indigo-600 text-white shadow-sm'
+          : 'text-slate-700 bg-white border border-slate-300 hover:bg-slate-50',
       ]">
         {{ page }}
       </button>
     </div>
 
     <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
-      class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
-      Next
+      class="px-3.5 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+      Berikutnya
     </button>
   </div>
 </template>

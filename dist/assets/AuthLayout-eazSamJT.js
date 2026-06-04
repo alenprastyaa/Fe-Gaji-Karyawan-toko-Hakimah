@@ -1,0 +1,1 @@
+import{_ as t,c as o,a as s,b as c,r,o as n}from"./index-BzUcyACA.js";const a={},_={class:"min-h-screen flex items-center justify-center bg-white"},d={class:"max-w-md w-full bg-white p-8 rounded-lg shadow-md"};function i(l,m){const e=r("router-view");return n(),o("div",_,[s("div",d,[c(e)])])}const f=t(a,[["render",i]]);export{f as default};

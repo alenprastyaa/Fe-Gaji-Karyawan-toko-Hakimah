@@ -33,14 +33,62 @@ onMounted(async () => {
 
 const roles = ["karyawan", "admin"];
 
-const formatDate = (dateString) => {
+const formatDateInput = (value) => {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 8);
+  const day = digits.slice(0, 2);
+  const month = digits.slice(2, 4);
+  const year = digits.slice(4, 8);
+
+  if (digits.length <= 2) return day;
+  if (digits.length <= 4) return `${day}/${month}`;
+  return `${day}/${month}/${year}`;
+};
+
+const toDisplayDate = (dateString) => {
   if (!dateString) return "";
-  const date = new Date(dateString);
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+
+  const value = String(dateString);
+  const displayMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (displayMatch) return value;
+
+  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    return `${day}/${month}/${year}`;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const toApiDate = (dateString) => {
+  if (!dateString) return null;
+
+  const value = String(dateString);
+  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+  const displayMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!displayMatch) return null;
+
+  const [, day, month, year] = displayMatch;
+  const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+  const isValidDate =
+    parsed.getFullYear() === Number(year) &&
+    parsed.getMonth() === Number(month) - 1 &&
+    parsed.getDate() === Number(day);
+
+  if (!isValidDate) return null;
+  return `${year}-${month}-${day}`;
+};
+
+const formatDate = (dateString) => {
+  return toDisplayDate(dateString);
 };
 
 const formatCurrency = (value) => {
@@ -83,22 +131,27 @@ const fetchInactiveUsers = async () => {
 };
 
 const handleAddUser = async () => {
+  const tanggalMasukKerja = toApiDate(newUser.value.tanggalMasukKerja);
+
   if (
     !newUser.value.username ||
     !newUser.value.password ||
     !newUser.value.namaLengkap ||
-    !newUser.value.tanggalMasukKerja ||
+    !tanggalMasukKerja ||
     newUser.value.gaji === null ||
     newUser.value.gaji === undefined
   ) {
     Swal.fire({
       icon: "warning",
       title: "Input Tidak Lengkap",
-      text: "Semua field harus diisi.",
+      text: "Semua field harus diisi. Tanggal wajib menggunakan format dd/mm/yyyy.",
     });
     return;
   }
-  const success = await userStore.addUser(newUser.value);
+  const success = await userStore.addUser({
+    ...newUser.value,
+    tanggalMasukKerja,
+  });
   if (success) {
     showAddModal.value = false;
     newUser.value = {
@@ -116,27 +169,40 @@ const handleAddUser = async () => {
 };
 
 const openEditModal = (user) => {
-  editedUser.value = { ...user, password: "", gaji: parseFloat(user.gaji) };
+  editedUser.value = {
+    ...user,
+    password: "",
+    tanggalMasukKerja: toDisplayDate(user.tanggalMasukKerja),
+    gaji: parseFloat(user.gaji),
+  };
   showEditModal.value = true;
 };
 
 const openEditInactiveModal = (user) => {
-  editedUser.value = { ...user, password: "", gaji: parseFloat(user.gaji), isFromInactive: true };
+  editedUser.value = {
+    ...user,
+    password: "",
+    tanggalMasukKerja: toDisplayDate(user.tanggalMasukKerja),
+    gaji: parseFloat(user.gaji),
+    isFromInactive: true,
+  };
   showEditModal.value = true;
 };
 
 const handleUpdateUser = async () => {
+  const tanggalMasukKerja = toApiDate(editedUser.value.tanggalMasukKerja);
+
   if (
     !editedUser.value.username ||
     !editedUser.value.namaLengkap ||
-    !editedUser.value.tanggalMasukKerja ||
+    !tanggalMasukKerja ||
     editedUser.value.gaji === null ||
     editedUser.value.gaji === undefined
   ) {
     Swal.fire({
       icon: "warning",
       title: "Input Tidak Lengkap",
-      text: "Username, Nama Lengkap, Tanggal Masuk Kerja, dan Gaji harus diisi.",
+      text: "Username, Nama Lengkap, Tanggal Masuk Kerja, dan Gaji harus diisi. Tanggal wajib menggunakan format dd/mm/yyyy.",
     });
     return;
   }
@@ -144,7 +210,7 @@ const handleUpdateUser = async () => {
     username: editedUser.value.username,
     role: editedUser.value.role,
     namaLengkap: editedUser.value.namaLengkap,
-    tanggalMasukKerja: editedUser.value.tanggalMasukKerja,
+    tanggalMasukKerja,
     gaji: editedUser.value.gaji,
     status: editedUser.value.status
   };
@@ -502,8 +568,10 @@ const openInactiveModal = async () => {
         <div class="mb-4">
           <label for="newTanggalMasukKerja" class="block text-gray-700 text-sm font-bold mb-2">Tanggal Masuk
             Kerja:</label>
-          <input type="date" id="newTanggalMasukKerja" v-model="newUser.tanggalMasukKerja"
-            class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
+          <input type="text" id="newTanggalMasukKerja" v-model="newUser.tanggalMasukKerja"
+            @input="newUser.tanggalMasukKerja = formatDateInput($event.target.value)" inputmode="numeric"
+            maxlength="10" placeholder="dd/mm/yyyy" class="shadow border rounded w-full py-2 px-3 text-gray-700"
+            required />
         </div>
         <div class="mb-4">
           <label for="newGaji" class="block text-gray-700 text-sm font-bold mb-2">Gaji (IDR):</label>
@@ -556,8 +624,10 @@ const openInactiveModal = async () => {
         <div class="mb-4">
           <label for="editTanggalMasukKerja" class="block text-gray-700 text-sm font-bold mb-2">Tanggal Masuk
             Kerja:</label>
-          <input type="date" id="editTanggalMasukKerja" v-model="editedUser.tanggalMasukKerja"
-            class="shadow border rounded w-full py-2 px-3 text-gray-700" required />
+          <input type="text" id="editTanggalMasukKerja" v-model="editedUser.tanggalMasukKerja"
+            @input="editedUser.tanggalMasukKerja = formatDateInput($event.target.value)" inputmode="numeric"
+            maxlength="10" placeholder="dd/mm/yyyy" class="shadow border rounded w-full py-2 px-3 text-gray-700"
+            required />
         </div>
         <div class="mb-4">
           <label for="editGaji" class="block text-gray-700 text-sm font-bold mb-2">Gaji (IDR):</label>

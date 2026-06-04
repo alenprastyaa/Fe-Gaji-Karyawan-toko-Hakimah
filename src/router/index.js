@@ -1,23 +1,42 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import Swal from "sweetalert2";
 import BonManagementPage from "@/views/Admin/BonManagementPage.vue";
+import { applySeo } from "@/utils/seo";
 
 const routes = [
   {
     path: "/",
+    name: "Home",
+    component: () => import("../views/HomePage.vue"),
+    meta: {
+      requiresAuth: false,
+      seo: {
+        title: "Toko Hakimah | Website Resmi dan Aplikasi Administrasi Karyawan",
+        description:
+          "Website resmi Toko Hakimah untuk informasi brand dan akses aplikasi administrasi, bon karyawan, dan operasional internal.",
+        url: "https://tokohakimah.my.id/",
+      },
+    },
+  },
+  {
+    path: "/login",
     component: () => import("../layouts/AuthLayout.vue"),
     children: [
       {
         path: "",
-        name: "Home",
-        redirect: "/login",
-      },
-      {
-        path: "login",
         name: "Login",
         component: () => import("../views/Auth/LoginPage.vue"),
-        meta: { requiresAuth: false },
+        meta: {
+          requiresAuth: false,
+          robots: "noindex, nofollow",
+          seo: {
+            title: "Login Aplikasi Toko Hakimah",
+            description: "Halaman login aplikasi internal Toko Hakimah untuk admin dan karyawan.",
+            url: "https://tokohakimah.my.id/login",
+            type: "website",
+          },
+        },
       },
     ],
   },
@@ -31,13 +50,13 @@ const routes = [
         path: "bon-input",
         name: "BonInput",
         component: () => import("../views/Karyawan/BonInputPage.vue"),
-        meta: { roles: ["karyawan", "admin"] },
+        meta: { roles: ["karyawan", "admin"], robots: "noindex, nofollow" },
       },
       {
         path: "my-bons",
         name: "MyBons",
         component: () => import("../views/Karyawan/MyBonsPage.vue"),
-        meta: { roles: ["karyawan", "admin"] },
+        meta: { roles: ["karyawan", "admin"], robots: "noindex, nofollow" },
       },
     ],
   },
@@ -45,7 +64,7 @@ const routes = [
   {
     path: "/admin",
     component: () => import("../layouts/AdminLayout.vue"),
-    meta: { requiresAuth: true, roles: ["admin"] },
+    meta: { requiresAuth: true, roles: ["admin"], robots: "noindex, nofollow" },
     children: [
       {
         path: "",
@@ -83,11 +102,20 @@ const routes = [
     path: "/:pathMatch(.*)*",
     name: "NotFound",
     component: () => import("../views/NotFoundPage.vue"),
+    meta: {
+      requiresAuth: false,
+      robots: "noindex, nofollow",
+      seo: {
+        title: "Halaman Tidak Ditemukan | Toko Hakimah",
+        description: "Halaman yang Anda cari tidak tersedia di website resmi Toko Hakimah.",
+        url: "https://tokohakimah.my.id/404",
+      },
+    },
   },
 ];
 
 const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 });
 
@@ -147,6 +175,10 @@ router.beforeEach(async (to, from, next) => {
 
     next("/login");
   }
+});
+
+router.afterEach((to) => {
+  applySeo(to);
 });
 
 export default router;

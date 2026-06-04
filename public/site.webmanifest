@@ -1,0 +1,9 @@
+{
+  "name": "Toko Hakimah",
+  "short_name": "Hakimah",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fcf8ef",
+  "theme_color": "#17311c",
+  "description": "Website resmi Toko Hakimah untuk informasi brand dan akses aplikasi administrasi internal."
+}

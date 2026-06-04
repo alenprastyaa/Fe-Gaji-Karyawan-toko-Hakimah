@@ -1,0 +1,1 @@
+import{_ as t,y as a,n as s,c as n,a as r,o as u}from"./index-BzUcyACA.js";const c={__name:"NotFoundPage",setup(_){const o=s();return a(()=>{localStorage.removeItem("token"),setTimeout(()=>{o.push("/login")},2e3)}),(l,e)=>(u(),n("div",null,e[0]||(e[0]=[r("h1",{class:"mx-auto text-center mt-100"},"Not Found",-1)])))}},d=t(c,[["__scopeId","data-v-149a528f"]]);export{d as default};

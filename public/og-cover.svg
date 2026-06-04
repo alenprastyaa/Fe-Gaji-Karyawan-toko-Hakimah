@@ -1,0 +1,15 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F6F0DF"/>
+  <circle cx="144" cy="114" r="220" fill="#E8C46E" fill-opacity="0.28"/>
+  <circle cx="1048" cy="540" r="230" fill="#1B6B4A" fill-opacity="0.16"/>
+  <rect x="74" y="86" width="1052" height="458" rx="36" fill="white" fill-opacity="0.78" stroke="#D7D1BD"/>
+  <text x="120" y="260" fill="#17311C" font-family="Arial, sans-serif" font-size="84" font-weight="700">
+    Toko Hakimah
+  </text>
+  <text x="120" y="334" fill="#314235" font-family="Arial, sans-serif" font-size="32">
+    Website resmi dan aplikasi administrasi karyawan
+  </text>
+  <text x="120" y="412" fill="#52734D" font-family="Arial, sans-serif" font-size="28">
+    tokohakimah.my.id
+  </text>
+</svg>
